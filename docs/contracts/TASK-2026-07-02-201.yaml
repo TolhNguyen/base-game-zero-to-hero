@@ -1,0 +1,64 @@
+task_id: TASK-2026-07-02-201
+objective: >
+  Card War has Definition resource schemas for cards, generals, terrain, maps,
+  and scenarios, plus documented stable ID prefixes.
+context: >
+  Implements the approved card_war vertical-slice plan for definition schemas.
+  Required project rules are CONSTITUTION.md, docs/governance/change-rules.md,
+  docs/governance/task-contract-template.md, and
+  docs/memory/domains/registry.md.
+inputs:
+  - Owner-approved TASK-2026-07-02-201 instructions in the executor prompt
+  - Existing Definition resource pattern in game/modules/inventory/item_def.gd
+  - Existing stable ID registry guidance in docs/memory/domains/registry.md
+expected_outputs:
+  - game/modules/card_war/sim/cw_card_def.gd defines CwCardDef
+  - game/modules/card_war/sim/cw_general_def.gd defines CwGeneralDef
+  - game/modules/card_war/sim/cw_terrain_def.gd defines CwTerrainDef
+  - game/modules/card_war/sim/cw_map_def.gd defines CwMapDef
+  - game/modules/card_war/sim/cw_scenario_def.gd defines CwScenarioDef tuning data
+  - game/tests/card_war/test_defs.gd covers card and scenario defaults
+  - docs/memory/domains/registry.md documents card_war ID prefixes
+allowed_paths:
+  - game/modules/card_war/sim/cw_card_def.gd
+  - game/modules/card_war/sim/cw_general_def.gd
+  - game/modules/card_war/sim/cw_terrain_def.gd
+  - game/modules/card_war/sim/cw_map_def.gd
+  - game/modules/card_war/sim/cw_scenario_def.gd
+  - game/tests/card_war/test_defs.gd
+  - docs/memory/domains/registry.md
+  - docs/contracts/TASK-2026-07-02-201.yaml
+  - game/modules/card_war/sim/*.uid
+  - game/tests/card_war/*.uid
+forbidden_actions:
+  - editing files outside allowed_paths
+  - editing existing docs/contracts execution records
+  - changing public signatures of game/core/ (Core-level; escalate)
+  - editing game/core, tools/check*, tools/validate_*, docs/governance, or .githooks
+  - adding dependencies or plugins
+expected_outputs_verification: >
+  First run the single GdUnit suite before implementation and observe failure
+  because the new scripts are missing. After implementation, run the same suite
+  and expect PASS. Then run rtk proxy "C:\Program Files\Git\bin\bash.exe"
+  tools/check.sh and expect PASS.
+acceptance_criteria:
+  - CwCardDef extends Definition and exposes display_name, energy_cost, and order_type defaults
+  - CwGeneralDef extends Definition and exposes display_name, general_class, combat_factor, and loss_reduction defaults
+  - CwTerrainDef extends Definition and exposes display_name, letter, and move_cost defaults
+  - CwMapDef extends Definition and exposes rows as PackedStringArray
+  - CwScenarioDef extends Definition and exposes all listed provisional tuning values
+  - test_defs.gd passes and asserts card Definition inheritance plus scenario defaults
+  - registry.md documents card.*, general.*, terrain.*, map.*, and scenario.* prefixes for card_war
+required_evidence:
+  - failing single-suite output from the RED step
+  - passing single-suite output after implementation
+  - passing tools/check.sh output summary
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change
+report_format: >
+  Reply with: Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT;
+  what was implemented; what was tested and exact results; commit SHA; files
+  changed; self-review findings; any concerns.
