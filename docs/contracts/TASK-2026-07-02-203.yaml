@@ -1,0 +1,78 @@
+task_id: TASK-2026-07-02-203
+objective: >
+  Card War has plain tuning and entity RefCounted classes plus CwState basics
+  for seeded deck handling, energy defaults, registries, lookups, total food,
+  and average morale.
+context: >
+  Implements the next card_war vertical-slice sim layer after
+  TASK-2026-07-02-201 established scenario definitions and TASK-2026-07-02-202
+  established CwMapGrid. Required project rules are CONSTITUTION.md,
+  docs/governance/change-rules.md, and docs/governance/task-contract-template.md.
+inputs:
+  - Owner-approved TASK-2026-07-02-203 instructions in the executor prompt
+  - CwScenarioDef from game/modules/card_war/sim/cw_scenario_def.gd
+  - CwMapGrid from game/modules/card_war/sim/cw_map_grid.gd
+  - Existing card_war GdUnit style in game/tests/card_war/
+expected_outputs:
+  - game/modules/card_war/sim/cw_tuning.gd defines CwTuning and from_def()
+  - game/modules/card_war/sim/cw_army.gd defines CwArmy
+  - game/modules/card_war/sim/cw_city.gd defines CwCity
+  - game/modules/card_war/sim/cw_camp.gd defines CwCamp
+  - game/modules/card_war/sim/cw_convoy.gd defines CwConvoy
+  - game/modules/card_war/sim/cw_order.gd defines CwOrder
+  - game/modules/card_war/sim/cw_state.gd defines CwState basics
+  - game/tests/card_war/test_state_deck.gd covers setup, seeded deck, draw, and city lookups
+  - Generated .uid files for new Godot scripts if Godot creates them
+allowed_paths:
+  - game/modules/card_war/sim/cw_tuning.gd
+  - game/modules/card_war/sim/cw_army.gd
+  - game/modules/card_war/sim/cw_city.gd
+  - game/modules/card_war/sim/cw_camp.gd
+  - game/modules/card_war/sim/cw_convoy.gd
+  - game/modules/card_war/sim/cw_order.gd
+  - game/modules/card_war/sim/cw_state.gd
+  - game/tests/card_war/test_state_deck.gd
+  - docs/contracts/TASK-2026-07-02-203.yaml
+  - game/modules/card_war/sim/cw_tuning.gd.uid
+  - game/modules/card_war/sim/cw_army.gd.uid
+  - game/modules/card_war/sim/cw_city.gd.uid
+  - game/modules/card_war/sim/cw_camp.gd.uid
+  - game/modules/card_war/sim/cw_convoy.gd.uid
+  - game/modules/card_war/sim/cw_order.gd.uid
+  - game/modules/card_war/sim/cw_state.gd.uid
+  - game/tests/card_war/test_state_deck.gd.uid
+forbidden_actions:
+  - editing files outside allowed_paths
+  - editing existing docs/contracts execution records
+  - implementing CwState.play_card, order validation, spawn_tile, or march_food_needed
+  - changing public signatures of game/core/ (Core-level; escalate)
+  - editing game/core, tools/check*, tools/validate_*, docs/governance, or .githooks
+  - adding dependencies or plugins
+expected_outputs_verification: >
+  First run the focused GdUnit suite before implementation and observe failure
+  because cw_state.gd and related scripts are missing. After implementation,
+  run the focused suite and expect PASS with 4 tests. Then run
+  rtk proxy C:\PROGRA~1\Git\bin\bash.exe tools/check.sh and expect PASS.
+acceptance_criteria:
+  - CwTuning mirrors every CwScenarioDef tuning export as plain vars and from_def copies them
+  - Entity RefCounted classes expose the requested members and locked food_per_turn formula where applicable
+  - CwState.setup initializes map, tuning, seeded RNG, turn, energy, and empty result correctly
+  - CwState card and general registries return requested existence, type, cost, combat factor, and loss reduction values
+  - CwState.set_deck copies, seeded-shuffles, clears discard, and draws opening hand
+  - CwState.draw respects hand_max and reshuffles discard when deck runs out
+  - CwState add_city, city_at, army_at, camp_at, next_id, busy-general, total_player_food, and avg_player_morale behave as specified
+  - CwState does not implement play_card, order validation, spawn_tile, or march_food_needed in this task
+  - Focused state-deck GdUnit suite and tools/check.sh pass
+required_evidence:
+  - failing focused GdUnit output from the RED step
+  - passing focused GdUnit output after implementation
+  - passing tools/check.sh output summary
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change
+report_format: >
+  Reply with: Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT;
+  what was implemented; what was tested and exact results; commit SHA; files
+  changed; self-review findings; any concerns.
