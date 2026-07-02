@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Pre-commit: fast mechanical governance checks (instant, no engine start).
+# Full verification is `bash tools/check.sh` — required as commit evidence.
+ROOT="$(git rev-parse --show-toplevel)"
+bash "$ROOT/tools/validate_deps.sh" || exit 1
+bash "$ROOT/tools/validate_protected.sh" || exit 1
+exit 0

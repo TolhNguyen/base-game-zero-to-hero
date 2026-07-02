@@ -4,6 +4,8 @@ A **genre-agnostic base codebase for Godot 4.x 2.5D games**, co-developed by hum
 
 ## For humans
 
+One-time setup after cloning: download the engine per `tools/godot/README.md`, then run `bash tools/install_hooks.sh` (activates governance pre-commit checks). Verify everything with `bash tools/check.sh`.
+
 Open the project in Godot 4.x and press F5 (playable Demo Sandbox arrives in Phase 3). This is a standard Godot project — you can read, run, and extend it without any AI tooling or agent documentation. If every AI agent disappeared tomorrow, development continues normally.
 
 ## For AI agents
