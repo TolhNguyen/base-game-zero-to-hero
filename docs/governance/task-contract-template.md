@@ -36,6 +36,38 @@ report_format: >
   Reply with: status (done/blocked), what changed, evidence, deviations, follow-ups.
 ```
 
+## Bug-fix contracts
+
+A contract whose objective is fixing a defect carries two extra obligations.
+The point of both: the cheapest change that makes the failing case pass must
+**fail verification** unless it is the real fix — symptom patches must have
+nowhere to hide.
+
+1. **It must contain a `root_cause` field.** The producer may create it as
+   `root_cause: TBD — executor fills after investigation`, but the executor
+   fills it **before writing the fix**, and the commit body repeats it as a
+   `Root cause:` line. A root cause names the mechanism, not the symptom
+   ("search filters client-side over the fetched page, so products beyond it
+   are invisible" — not "product not found").
+
+2. **At least one acceptance criterion must be strictly more general than
+   the failing instance** — general enough that the obvious symptom patch
+   fails it. Pin any tuning constant the patch could hide in.
+
+Example — bug: "product X not found among 100 products":
+
+```yaml
+root_cause: >
+  Search filters client-side over the currently fetched page; anything
+  beyond that page is invisible to it.
+acceptance_criteria:
+  - searching finds any product regardless of which page it would be on
+    (fixture: 10_000 products, target on the last page)  # kills "raise page size"
+  - page size is unchanged  # pins the constant the patch would hide in
+```
+
+Workflow: `docs/workflows/bug-fixing.md`.
+
 ## Filled example
 
 ```yaml

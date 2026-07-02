@@ -1,0 +1,48 @@
+# Task Contract
+task_id: TASK-2026-07-02-111
+objective: >
+  Bug-fix work is gated against symptom patches: contracts require a
+  root_cause field and a generalized acceptance criterion, and a bug-fixing
+  workflow records the procedure.
+context: >
+  Owner raised (chat 2026-07-02) that agents fix bugs where they are
+  visible, not where they originate (e.g. raising page size instead of
+  moving search server-side). Decision recorded in ADR-0009; template
+  change is Core-level (docs/governance/), approved in chat.
+inputs:
+  - docs/governance/task-contract-template.md
+  - docs/workflows/ (feature-development, failure-handling as style anchors)
+expected_outputs:
+  - task-contract-template.md gains a "Bug-fix contracts" section
+    (root_cause field + symptom-killing criterion, with example)
+  - docs/workflows/bug-fixing.md (active; evidence 2026-07-02 remediation)
+  - failure-handling.md scoped against bug-fixing; workflows README lists
+    all three workflows; AGENTS.md recipe pointer updated
+allowed_paths:
+  - docs/governance/task-contract-template.md
+  - docs/workflows/**
+  - AGENTS.md
+  - docs/architecture/adr/0009-bug-fix-contracts-root-cause.md
+forbidden_actions:
+  - editing files outside allowed_paths
+  - weakening any existing contract-template requirement
+  - adding validators or hooks (deferred per ADR-0009)
+expected_outputs_verification: >
+  bash tools/check.sh -> CHECK: PASS (docs-only change; validators and
+  tests unaffected). Manual review of the new template section and workflow.
+acceptance_criteria:
+  - template documents both bug-fix obligations with a worked example whose
+    generalized criterion defeats the page-size patch
+  - bug-fixing.md is an ordered checklist with root-cause and generalize
+    gates before any fix
+  - failure-handling.md and bug-fixing.md have non-overlapping scope
+    statements
+required_evidence:
+  - tools/check output summary in commit body
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires new enforcement machinery (hooks/validators)
+report_format: >
+  Commit message per change-rules; evidence in body.

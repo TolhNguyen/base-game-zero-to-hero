@@ -4,6 +4,10 @@
 - Owner: QA
 - Evidence: FAIL-2026-07-02-01 → ADR-0005 → boot-smoke step (commit 4857679), first full loop
 
+Scope: a defect that escaped a check, or a check that lied. Fixing an
+ordinary bug is workflow `bug-fixing`; this workflow is about the *gap in
+the safety net* that let it through.
+
 Ordered checklist; **[GATE]** steps must pass before continuing.
 
 1. **Capture** — the moment a defect escapes past a check (or a check itself lies), create `docs/memory/failures/FAIL-YYYY-MM-DD-NN.md` from `TEMPLATE.md`, Status: Open. Facts only: symptom, detection.
