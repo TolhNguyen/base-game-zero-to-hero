@@ -9,6 +9,10 @@ game/.godot/
 # gdUnit4 test reports
 game/reports/
 
+# Unapproved art (see docs/art/asset-spec.md)
+art_incoming/*
+!art_incoming/README.md
+
 # OS noise
 Thumbs.db
 Desktop.ini
