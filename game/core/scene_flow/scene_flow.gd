@@ -37,6 +37,7 @@ func goto_scene(scene_id: StringName, spawn_point: StringName = &"") -> Error:
 	var err: Error = switcher.call((def as SceneDef).scene_path)
 	if err != OK:
 		push_error("SceneFlow: switching to '%s' failed (%d)" % [scene_id, err])
+		_pending_spawn = &""
 		return err
 	_current_id = scene_id
 	if bus:

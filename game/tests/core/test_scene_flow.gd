@@ -67,3 +67,9 @@ func test_failed_switch_keeps_state_and_skips_changed_event() -> void:
 	assert_int(flow.goto_scene(&"scene.test_boot")).is_equal(ERR_CANT_OPEN)
 	assert_int(_events.size()).is_equal(1)  # only about_to_change
 	assert_str(String(flow.current_scene_id())).is_equal("")
+
+
+func test_failed_switch_clears_pending_spawn() -> void:
+	var flow: Node = _wired_flow(ERR_CANT_OPEN)
+	flow.goto_scene(&"scene.test_boot", &"door_a")
+	assert_str(String(flow.consume_spawn_point())).is_equal("")

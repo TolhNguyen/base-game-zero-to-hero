@@ -53,6 +53,23 @@ func test_pause_menu_resume_emits_and_closes() -> void:
 	assert_bool(get_tree().paused).is_false()
 
 
+func test_pause_menu_close_restores_prior_pause_state() -> void:
+	var menu: CanvasLayer = auto_free(PauseMenuScene.instantiate())
+	add_child(menu)
+	get_tree().paused = true  # paused by something else (cutscene, modal, ...)
+	menu.open()
+	menu.close()
+	assert_bool(get_tree().paused).is_true()
+
+
+func test_pause_menu_freed_while_open_restores_pause_state() -> void:
+	var menu: CanvasLayer = PauseMenuScene.instantiate()
+	add_child(menu)
+	menu.open()
+	menu.free()
+	assert_bool(get_tree().paused).is_false()
+
+
 func test_settings_menu_instantiates_with_slider() -> void:
 	var menu: Control = auto_free(SettingsMenuScene.instantiate())
 	add_child(menu)

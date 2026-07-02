@@ -1,0 +1,43 @@
+# Task Contract
+task_id: TASK-2026-07-02-108
+objective: >
+  Failed scene switches and registry scans leave no partial state, and the
+  pause menu preserves whatever pause state the tree had before it opened.
+context: >
+  External code review 2026-07-02, lifecycle findings. Core-level change
+  approved by owner in chat; decision recorded in ADR-0007.
+inputs:
+  - game/core/scene_flow/scene_flow.gd
+  - game/core/registry/registry.gd
+  - game/core/ui_kit/pause_menu.gd
+expected_outputs:
+  - scene_flow.gd resets _pending_spawn on failed switch
+  - registry.gd scans into a temp index, swapped in only on success
+  - pause_menu.gd restores prior pause state on close() and _exit_tree()
+  - regression tests in test_scene_flow.gd, test_registry.gd, test_ui_kit.gd
+allowed_paths:
+  - game/core/scene_flow/**
+  - game/core/registry/**
+  - game/core/ui_kit/**
+  - game/tests/core/**
+  - docs/architecture/adr/0007-core-lifecycle-hardening.md
+forbidden_actions:
+  - editing files outside allowed_paths
+  - changing public signatures of core services
+  - adding dependencies or plugins
+expected_outputs_verification: >
+  bash tools/check.sh -> CHECK: PASS including the 4 new regression tests.
+acceptance_criteria:
+  - consume_spawn_point() returns "" after a failed goto_scene
+  - a failed scan keeps the previous index (count and lookups intact)
+  - closing the pause menu over an already-paused tree keeps it paused
+  - freeing an open pause menu restores the pre-open pause state
+required_evidence:
+  - tools/check output summary in commit body
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires changing public core signatures
+report_format: >
+  Commit message per change-rules; evidence in body.

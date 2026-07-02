@@ -49,6 +49,14 @@ func test_empty_id_is_hard_error() -> void:
 	assert_int(reg.scan(FIXTURES + "/empty_id")).is_equal(ERR_INVALID_DATA)
 
 
+func test_failed_scan_preserves_previous_index() -> void:
+	var reg: Node = _fresh()
+	reg.scan(FIXTURES + "/valid")
+	assert_int(reg.scan(FIXTURES + "/duplicate")).is_equal(ERR_ALREADY_EXISTS)
+	assert_int(reg.count()).is_equal(3)
+	assert_bool(reg.has_def(&"item.apple")).is_true()
+
+
 func test_rescan_clears_previous_state() -> void:
 	var reg: Node = _fresh()
 	reg.scan(FIXTURES + "/valid")
