@@ -18,8 +18,12 @@ This repository is a **genre-agnostic base codebase for Godot 4.x 2.5D games**, 
 - docs/governance/
 - game/core/            (Phase 2+)
 - tools/check*          (Phase 2+)
+- tools/validate_*      (the validators)
+- tools/install_hooks.sh
+- .githooks/            (the pre-commit enforcement mechanism)
 - game/core/save/       (save schema and migration rules)
 - docs/architecture/adr/  (existing ADRs are immutable; adding new ones is Normal)
+- docs/contracts/       (committed contracts are immutable execution records)
 ```
 
 Procedure and rationale: `docs/governance/protected-core.md`. Approved Core changes are recorded in an ADR committed together with the change.

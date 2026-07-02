@@ -47,9 +47,20 @@ echo "$TEST_OUT" | grep -E "Overall Summary|test cases" | tail -2
 if [ "$FAST" -eq 0 ]; then
 	echo "check: boot smoke..."
 	BOOT_OUT="$("$GODOT" --headless --path "$GAME" --quit-after 30 2>&1)"
+	BOOT_EXIT=$?
+	if [ $BOOT_EXIT -ne 0 ]; then
+		echo "$BOOT_OUT" | tail -10
+		fail "boot smoke exited nonzero ($BOOT_EXIT)"
+	fi
 	if echo "$BOOT_OUT" | grep -qE "SCRIPT ERROR|Parse Error|Failed to instantiate an autoload"; then
 		echo "$BOOT_OUT" | grep -E "SCRIPT ERROR|Parse Error|Failed to instantiate|at: " | head -10
 		fail "boot smoke found script errors"
+	fi
+	# Positive markers: absence of errors is not evidence the boot ran (ADR-0008).
+	echo "$BOOT_OUT" | grep -q "boot: ok" || fail "boot smoke missing 'boot: ok' marker"
+	if [ -d "$GAME/content" ]; then
+		echo "$BOOT_OUT" | grep -q "boot: content scanned" \
+			|| fail "boot smoke missing 'boot: content scanned' marker (content scan failed?)"
 	fi
 	echo "check: boot smoke OK"
 fi

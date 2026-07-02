@@ -1,0 +1,51 @@
+# Task Contract
+task_id: TASK-2026-07-02-110
+objective: >
+  The governance rules that existed only as documentation are machine-
+  enforced: boot smoke cannot false-pass, cross-module class_name coupling
+  cannot pass validate_deps, and the enforcement scripts and committed
+  contracts are themselves protected.
+context: >
+  External code review 2026-07-02, governance findings. Core-level change
+  (tools/*, docs/governance/) approved by owner in chat; decision recorded
+  in ADR-0008.
+inputs:
+  - tools/check.sh, tools/validate_deps.sh, tools/validate_protected.sh
+  - docs/governance/protected-core.md, AGENTS.md
+expected_outputs:
+  - check.sh boot smoke checks exit code and positive markers
+  - validate_deps.sh flags cross-ring class_name references
+  - validate_protected.sh protects .githooks/ and tools/install_hooks.sh,
+    and enforces contract immutability
+  - protected-core.md and AGENTS.md path lists updated
+allowed_paths:
+  - tools/check.sh
+  - tools/validate_deps.sh
+  - tools/validate_protected.sh
+  - docs/governance/protected-core.md
+  - AGENTS.md
+  - docs/architecture/adr/0008-governance-enforcement-hardening.md
+forbidden_actions:
+  - editing files outside allowed_paths
+  - weakening any existing validator rule
+  - adding dependencies or plugins
+expected_outputs_verification: >
+  Adversarial: each previously-missed violation now exits 1 (cross-module
+  class ref, core-uses-module class, .githooks edit without ADR, old
+  contract edit, duplicate content id boot). Clean tree: bash tools/check.sh
+  -> CHECK: PASS.
+acceptance_criteria:
+  - a module .gd referencing another module's class_name fails validate_deps
+  - staging a .githooks change without a new ADR fails validate_protected
+  - staging an edit to a committed contract fails validate_protected
+  - a duplicate content id makes the boot smoke step fail
+  - unmodified tree still passes tools/check
+required_evidence:
+  - adversarial run outputs and tools/check summary in commit body
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - a validator change breaks legitimate existing workflows
+report_format: >
+  Commit message per change-rules; evidence in body.

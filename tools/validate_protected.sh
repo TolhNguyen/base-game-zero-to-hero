@@ -14,7 +14,7 @@ STAGED="$(git diff --cached --name-only 2>/dev/null || true)"
 
 is_protected() {
 	case "$1" in
-		CONSTITUTION.md|docs/governance/*|game/core/*|tools/check*|tools/validate_*) return 0 ;;
+		CONSTITUTION.md|docs/governance/*|game/core/*|tools/check*|tools/validate_*|.githooks/*|tools/install_hooks.sh) return 0 ;;
 		*) return 1 ;;
 	esac
 }
@@ -52,6 +52,17 @@ DELETED_ADRS="$(git diff --cached --name-status | awk '$1=="D" && $2 ~ /^docs\/a
 if [ -n "$DELETED_ADRS" ]; then
 	echo "ADR IMMUTABILITY: ADRs must never be deleted:"
 	echo "$DELETED_ADRS" | sed 's/^/  - /'
+	exit 1
+fi
+
+# --- Task-contract immutability (docs/contracts/README.md) ----------------------
+# Committed contracts are execution records: never modified, renamed, or deleted.
+CHANGED_CONTRACTS="$(git diff --cached --name-status \
+	| awk '($1=="M" || $1=="D" || $1 ~ /^R/) && $2 ~ /^docs\/contracts\/TASK-/ {print $1"\t"$2}')"
+if [ -n "$CHANGED_CONTRACTS" ]; then
+	echo "CONTRACT IMMUTABILITY: committed contracts are execution records;"
+	echo "fix mistakes with a follow-up task, never by editing history:"
+	echo "$CHANGED_CONTRACTS" | sed 's/^/  - /'
 	exit 1
 fi
 

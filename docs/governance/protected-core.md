@@ -10,8 +10,12 @@ PROTECTED CORE PATHS
 - docs/governance/
 - game/core/            (Phase 2+)
 - tools/check*          (Phase 2+; the validator entry point and its scripts)
+- tools/validate_*      (the validators themselves)
+- tools/install_hooks.sh  (installs the enforcement hooks)
+- .githooks/            (the pre-commit enforcement mechanism)
 - game/core/save/       save schema and migration rules (called out explicitly)
 - docs/architecture/adr/  (existing ADRs are immutable; adding new ones is Normal)
+- docs/contracts/       (committed contracts are immutable execution records)
 ```
 
 ## Why each path is protected
@@ -19,7 +23,8 @@ PROTECTED CORE PATHS
 - `CONSTITUTION.md` — the highest law; silent edits corrupt every downstream rule.
 - `docs/governance/` — defines who may change what; if this is editable freely, governance is meaningless.
 - `game/core/` — every module depends on it; a breaking change here breaks everything (P8).
-- `tools/check*` — the enforcement mechanism itself; a "police" that anyone can rewrite enforces nothing.
+- `tools/check*`, `tools/validate_*`, `tools/install_hooks.sh`, `.githooks/` — the enforcement mechanism itself; a "police" that anyone can rewrite enforces nothing.
+- `docs/contracts/` — execution records; editable history makes evidence meaningless (fix mistakes with a follow-up task).
 - `game/core/save/` — mistakes here destroy player save data permanently (P3).
 - `docs/architecture/adr/` — the decision record; history must be immutable (supersede, never edit).
 
