@@ -42,6 +42,13 @@ Procedure and rationale: `docs/governance/protected-core.md`. Approved Core chan
 - Report exactly in the contract's `report_format`.
 - Refuse contracts with empty fields.
 
+## Proven recipes
+
+Before inventing a procedure, check `docs/skills/` (module creation, content
+definitions, verification, core changes) and `docs/workflows/` (feature
+development, failure handling). They are extracted from real work and carry
+evidence links.
+
 ## When things fail
 
 Record post-mortems in `docs/memory/failures/` (template there). A failure entry is closed **only** by a system action: a new rule, a new test, or a skill fix, with the commit linked. This is the only mechanism that may add new rules (Constitution P6).
