@@ -21,9 +21,10 @@ func _fresh() -> Node:
 
 func after_test() -> void:
 	for slot in [TEST_SLOT, TEST_SLOT + 1]:
-		var path := "user://saves/slot_%d.json" % slot
-		if FileAccess.file_exists(path):
-			DirAccess.remove_absolute(path)
+		for suffix in ["", ".bak", ".tmp"]:
+			var path := "user://saves/slot_%d.json%s" % [slot, suffix]
+			if FileAccess.file_exists(path):
+				DirAccess.remove_absolute(path)
 
 
 func test_round_trip_single_provider() -> void:
@@ -97,6 +98,65 @@ func test_corrupt_file_is_refused() -> void:
 
 	var svc: Node = _fresh()
 	assert_int(svc.load_game(TEST_SLOT)).is_equal(ERR_FILE_CORRUPT)
+
+
+func test_resave_keeps_backup_of_previous_save() -> void:
+	var svc: Node = _fresh()
+	var prov := StubProvider.new()
+	svc.register_provider(&"player", prov)
+	prov.state = {"hp": 1}
+	assert_int(svc.save_game(TEST_SLOT)).is_equal(OK)
+	prov.state = {"hp": 2}
+	assert_int(svc.save_game(TEST_SLOT)).is_equal(OK)
+
+	var bak_path := "user://saves/slot_%d.json.bak" % TEST_SLOT
+	assert_bool(FileAccess.file_exists(bak_path)).is_true()
+	var bak: Variant = JSON.parse_string(FileAccess.get_file_as_string(bak_path))
+	assert_that(bak["data"]["player"]).is_equal({"hp": 1.0})
+
+
+func test_save_leaves_no_temp_file() -> void:
+	var svc: Node = _fresh()
+	svc.register_provider(&"p", StubProvider.new())
+	assert_int(svc.save_game(TEST_SLOT)).is_equal(OK)
+	assert_bool(FileAccess.file_exists("user://saves/slot_%d.json.tmp" % TEST_SLOT)).is_false()
+
+
+func test_corrupt_main_file_falls_back_to_backup() -> void:
+	var svc: Node = _fresh()
+	var prov := StubProvider.new()
+	svc.register_provider(&"player", prov)
+	prov.state = {"hp": 7}
+	assert_int(svc.save_game(TEST_SLOT)).is_equal(OK)
+	prov.state = {"hp": 8}
+	assert_int(svc.save_game(TEST_SLOT)).is_equal(OK)
+
+	# Simulate a crash mid-write: main file truncated to garbage.
+	var file := FileAccess.open("user://saves/slot_%d.json" % TEST_SLOT, FileAccess.WRITE)
+	file.store_string("{ truncated")
+	file.close()
+
+	prov.state = {}
+	assert_int(svc.load_game(TEST_SLOT)).is_equal(OK)
+	assert_that(prov.state).is_equal({"hp": 7.0})
+
+
+func test_backup_and_temp_are_not_listed_as_slots() -> void:
+	var svc: Node = _fresh()
+	svc.register_provider(&"p", StubProvider.new())
+	svc.save_game(TEST_SLOT)
+	svc.save_game(TEST_SLOT)  # second save creates the .bak
+	var slots: Array[int] = svc.list_slots()
+	assert_int(slots.count(TEST_SLOT)).is_equal(1)
+
+
+func test_delete_slot_removes_backup_too() -> void:
+	var svc: Node = _fresh()
+	svc.register_provider(&"p", StubProvider.new())
+	svc.save_game(TEST_SLOT)
+	svc.save_game(TEST_SLOT)
+	assert_int(svc.delete_slot(TEST_SLOT)).is_equal(OK)
+	assert_bool(FileAccess.file_exists("user://saves/slot_%d.json.bak" % TEST_SLOT)).is_false()
 
 
 func test_list_and_delete_slots() -> void:

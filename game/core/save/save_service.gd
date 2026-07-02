@@ -30,23 +30,43 @@ func unregister_provider(key: StringName) -> void:
 	_providers.erase(key)
 
 
+## Writes are atomic (P3): the document goes to a .tmp file first, the
+## previous save (if any) is kept as .bak, then .tmp is renamed into place.
+## A crash at any point leaves either the old save or the old save + .bak.
 func save_game(slot: int) -> Error:
 	DirAccess.make_dir_recursive_absolute(SAVE_DIR)
 	var data := {}
 	for key: StringName in _providers:
 		data[String(key)] = _providers[key].capture()
 	var doc := {"schema_version": SCHEMA_VERSION, "data": data}
-	var file := FileAccess.open(_slot_path(slot), FileAccess.WRITE)
+	var path := _slot_path(slot)
+	var tmp_path := path + ".tmp"
+	var file := FileAccess.open(tmp_path, FileAccess.WRITE)
 	if file == null:
 		return FileAccess.get_open_error()
 	file.store_string(JSON.stringify(doc, "\t"))
-	return OK
+	file.close()
+	if FileAccess.file_exists(path):
+		if FileAccess.file_exists(path + ".bak"):
+			DirAccess.remove_absolute(path + ".bak")
+		var err := DirAccess.rename_absolute(path, path + ".bak")
+		if err != OK:
+			return err
+	return DirAccess.rename_absolute(tmp_path, path)
 
 
 func load_game(slot: int) -> Error:
 	var path := _slot_path(slot)
 	if not FileAccess.file_exists(path):
 		return ERR_DOES_NOT_EXIST
+	var err := _load_from(slot, path)
+	if err == ERR_FILE_CORRUPT and FileAccess.file_exists(path + ".bak"):
+		push_warning("SaveService: slot %d is corrupt, restoring from backup" % slot)
+		return _load_from(slot, path + ".bak")
+	return err
+
+
+func _load_from(slot: int, path: String) -> Error:
 	var text := FileAccess.get_file_as_string(path)
 	var doc: Variant = JSON.parse_string(text)
 	if doc == null or not doc is Dictionary or not doc.has("schema_version"):
@@ -85,6 +105,9 @@ func list_slots() -> Array[int]:
 func delete_slot(slot: int) -> Error:
 	if not FileAccess.file_exists(_slot_path(slot)):
 		return ERR_DOES_NOT_EXIST
+	for suffix in [".bak", ".tmp"]:
+		if FileAccess.file_exists(_slot_path(slot) + suffix):
+			DirAccess.remove_absolute(_slot_path(slot) + suffix)
 	return DirAccess.remove_absolute(_slot_path(slot))
 
 

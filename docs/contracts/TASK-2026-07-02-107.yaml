@@ -1,0 +1,41 @@
+# Task Contract
+task_id: TASK-2026-07-02-107
+objective: >
+  SaveService writes atomically (tmp + rename), keeps a one-generation .bak
+  of the previous save, and load falls back to the backup on corruption.
+context: >
+  External code review 2026-07-02, finding #1 (P3 violation: direct write can
+  destroy saves on crash). Core-level change approved by owner in chat;
+  decision recorded in ADR-0006.
+inputs:
+  - game/core/save/save_service.gd (current direct-write implementation)
+  - game/tests/core/test_save.gd
+expected_outputs:
+  - game/core/save/save_service.gd with atomic save, .bak retention,
+    corrupt-load fallback, and .bak/.tmp cleanup in delete_slot
+  - game/tests/core/test_save.gd covering backup creation, no leftover .tmp,
+    corrupt-main fallback, slot listing, and delete cleanup
+allowed_paths:
+  - game/core/save/**
+  - game/tests/core/test_save.gd
+  - docs/architecture/adr/0006-atomic-save-with-backup.md
+forbidden_actions:
+  - editing files outside allowed_paths
+  - changing SCHEMA_VERSION or the save document layout
+  - adding dependencies or plugins
+expected_outputs_verification: >
+  bash tools/check.sh -> CHECK: PASS including 12 test cases in test_save.gd.
+acceptance_criteria:
+  - saving twice leaves a .bak containing the previous document
+  - no .tmp file remains after a successful save
+  - corrupting the main file then loading restores the backup state
+  - .bak/.tmp never appear in list_slots(); delete_slot removes them
+required_evidence:
+  - tools/check output summary in commit body
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires changing the save schema
+report_format: >
+  Commit message per change-rules; evidence in body.
