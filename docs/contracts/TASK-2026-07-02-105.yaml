@@ -1,0 +1,37 @@
+# Task Contract
+task_id: TASK-2026-07-02-105
+objective: >
+  A quest_lite module exists: QuestDef resources tracked by a QuestTracker
+  that counts EventBus occurrences and announces completion.
+context: >
+  Phase 3 plan T6. Ring-2. Quests observe the world ONLY through EventBus
+  topics — the tracker never references other modules (P8).
+inputs:
+  - docs/memory/domains/events.md
+expected_outputs:
+  - game/modules/quest_lite/quest_def.gd (QuestDef)
+  - game/modules/quest_lite/quest_tracker.gd (QuestTracker)
+  - game/tests/modules/test_quest.gd
+allowed_paths:
+  - game/modules/quest_lite/**
+  - game/tests/modules/**
+  - game/tests/fixtures/**
+forbidden_actions:
+  - editing files outside allowed_paths
+  - referencing other modules or demo (P8)
+  - adding dependencies or plugins
+expected_outputs_verification: >
+  bash tools/check.sh -> CHECK: PASS including new tests.
+acceptance_criteria:
+  - start_quest resolves via Registry; progress counts topic events
+  - reaching required_count publishes &"quest.completed" {id} exactly once
+  - capture()/restore() round-trips progress and completion
+required_evidence:
+  - tools/check output summary in commit body
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change
+report_format: >
+  Commit message per change-rules; evidence in body.
