@@ -11,6 +11,7 @@ var bus: Node
 var change_fn: Callable
 
 var _current_id: StringName = &""
+var _pending_spawn: StringName = &""
 
 
 func _ready() -> void:
@@ -29,6 +30,7 @@ func goto_scene(scene_id: StringName, spawn_point: StringName = &"") -> Error:
 	if spawn_point == &"":
 		spawn_point = (def as SceneDef).default_spawn
 	var payload := {"from": _current_id, "to": scene_id, "spawn_point": spawn_point}
+	_pending_spawn = spawn_point
 	if bus:
 		bus.publish(&"scene.about_to_change", payload)
 	var switcher := change_fn if change_fn.is_valid() else Callable(self, "_change_scene_real")
@@ -44,6 +46,14 @@ func goto_scene(scene_id: StringName, spawn_point: StringName = &"") -> Error:
 
 func current_scene_id() -> StringName:
 	return _current_id
+
+
+## One-shot: the spawn point requested by the last transition. The incoming
+## scene calls this from _ready (events fire before that scene exists).
+func consume_spawn_point() -> StringName:
+	var sp := _pending_spawn
+	_pending_spawn = &""
+	return sp
 
 
 func _change_scene_real(scene_path: String) -> Error:
