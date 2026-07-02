@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://modules/quest_lite/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"quest.collect_apples"
+title = "Collect three apples"
+completion_topic = &"demo.apple_collected"
+required_count = 3

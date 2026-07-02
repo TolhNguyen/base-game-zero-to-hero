@@ -12,6 +12,10 @@ run/main_scene="res://core/boot/boot.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[app]
+
+start_scene_id="scene.demo_room_a"
+
 [autoload]
 
 Log="*res://core/debug/log.gd"
@@ -21,6 +25,7 @@ SaveService="*res://core/save/save_service.gd"
 SceneFlow="*res://core/scene_flow/scene_flow.gd"
 Settings="*res://core/settings/settings.gd"
 Platform="*res://core/platform/standalone_platform.gd"
+DemoState="*res://demo/demo_state.gd"
 
 [editor_plugins]
 

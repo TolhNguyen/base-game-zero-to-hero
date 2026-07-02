@@ -1,0 +1,37 @@
+# Task Contract
+task_id: TASK-2026-07-02-106
+objective: >
+  A playable Demo Sandbox exists: two rooms, NPC dialogue, apple pickups,
+  chest, quest, scene doors, HUD, pause, save/load — placeholder art.
+context: >
+  Phase 3 plan T7. Ring-3 (demo may reference modules and core; nothing
+  references demo back). Content is data in game/content (P7 stable IDs).
+inputs:
+  - all five module APIs (contracts 101-105)
+  - core boot/spawn wiring (ADR-0004)
+expected_outputs:
+  - game/content/ definitions (item, dialogue, quest, 2 scene defs)
+  - game/demo/ (demo_state autoload, rooms, props, HUD)
+  - game/tests/demo/test_content.gd (content scans clean, expected ids exist)
+allowed_paths:
+  - game/content/**
+  - game/demo/**
+  - game/tests/demo/**
+  - game/project.godot   # autoload DemoState + app/start_scene_id only
+forbidden_actions:
+  - editing game/core or game/modules
+  - referencing demo from any lower ring
+expected_outputs_verification: >
+  bash tools/check.sh -> CHECK: PASS; headless run logs demo room entry.
+acceptance_criteria:
+  - headless --quit-after run reaches room_a (log line present)
+  - content scan test passes with all expected stable IDs
+  - deleting game/demo + game/content + 2 project.godot lines restores a bare base
+required_evidence:
+  - tools/check output summary + headless boot log in commit body
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching game/core or game/modules
+report_format: >
+  Commit message per change-rules; evidence in body.

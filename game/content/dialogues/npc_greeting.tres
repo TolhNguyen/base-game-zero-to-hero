@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://modules/dialogue/dialogue_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"dialogue.npc_greeting"
+lines = PackedStringArray("Elder|Welcome to the sandbox, traveler.", "Elder|Bring me three apples and the quest completes.", "Elder|The chest also drops apples. Doors lead next door. F9 saves, F10 loads.")

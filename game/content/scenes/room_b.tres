@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="SceneDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/scene_flow/scene_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"scene.demo_room_b"
+scene_path = "res://demo/rooms/room_b.tscn"
+default_spawn = &"from_a"
