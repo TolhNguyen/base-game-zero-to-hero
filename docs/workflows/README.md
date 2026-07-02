@@ -6,12 +6,14 @@ A workflow is an ordered checklist with gates — steps where either a human mus
 
 Same as skills: `draft → active → deprecated` (a `Status:` line in the file header), promotion to `active` requires at least one successful use with evidence.
 
-## Active workflows
+## Workflows
 
-| Workflow | Use when |
-|---|---|
-| `feature-development.md` | building anything new, spec → contracts → commit |
-| `bug-fixing.md` | fixing a defect — gates against symptom patches |
-| `failure-handling.md` | a defect escaped a check, or a check lied |
+| Workflow | Status | Use when |
+|---|---|---|
+| `feature-development.md` | active | building anything new, spec → contracts → commit |
+| `bug-fixing.md` | active | fixing a defect — gates against symptom patches |
+| `failure-handling.md` | active | a defect escaped a check, or a check lied |
+| `new-game.md` | draft | starting a real game from a game idea on this base |
 
-All were extracted from real practice, not invented up front (Constitution P6).
+Active workflows were extracted from real practice (Constitution P6);
+`new-game.md` awaits its first real use for promotion.

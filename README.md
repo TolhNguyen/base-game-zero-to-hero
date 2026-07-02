@@ -31,5 +31,16 @@ Read `AGENTS.md` first. It is the entry point for every agent session.
 | 3 — Modules + Demo Sandbox | 5 gameplay modules, playable demo | **Complete** (2026-07-02) |
 | 4 — Production Hardening | Skills, workflows, art integration | **Complete** (2026-07-02) |
 | 5 — Handover | Maintainer guide, final audit | **Complete** (2026-07-02) |
+| Post-handover hardening | External-review remediation (ADR-0006..0009) | **Complete** (2026-07-02) |
 
-The base is operational. Human maintainers: see `docs/MAINTAINER.md`. Building a real game from this base: see "Starting a new game" in `docs/architecture/overview.md`.
+### Post-handover hardening (2026-07-02)
+
+An external code review was triaged and its accepted findings fixed:
+
+- **Atomic saves** — writes go tmp → rename with a one-generation `.bak`; corrupt saves self-heal from backup (ADR-0006).
+- **Lifecycle correctness** — failed scene switches and registry scans leave no partial state; the pause menu preserves pre-existing pause state (ADR-0007).
+- **Fail-early inventory** — unknown/non-item IDs are rejected, consistent with every other stable-ID consumer.
+- **Enforcement gaps closed** — boot smoke requires positive markers and exit code 0; `validate_deps` catches cross-module `class_name` coupling; `.githooks/`, the hook installer, and committed contracts are protected (ADR-0008).
+- **Anti-symptom-fix rules** — bug-fix contracts require a `root_cause` field and an acceptance criterion general enough to defeat the cheapest patch; procedure in `docs/workflows/bug-fixing.md` (ADR-0009).
+
+The base is operational. Human maintainers: see `docs/MAINTAINER.md`. Building a real game from this base: workflow `docs/workflows/new-game.md` (mechanical steps: "Starting a new game" in `docs/architecture/overview.md`).

@@ -1,0 +1,51 @@
+# Task Contract
+task_id: TASK-2026-07-02-112
+objective: >
+  The README documents the post-handover hardening, and a new-game workflow
+  records how to go from a game idea to a vertical slice on this base.
+context: >
+  Owner request (chat 2026-07-02) after the external-review remediation:
+  surface what changed in the README, and write the idea-to-start procedure
+  that overview.md only covers mechanically. Normal-level (docs outside
+  protected paths).
+inputs:
+  - README.md (status table, closing pointers)
+  - docs/architecture/overview.md ("Starting a new game" section)
+  - docs/workflows/ (existing workflows as style anchors)
+expected_outputs:
+  - README.md gains a post-handover hardening section (ADR-0006..0009
+    summary) and points at the new workflow
+  - docs/workflows/new-game.md (Status draft — no real use yet), idea →
+    vision page → fork → clean-slate check → module audit → content model →
+    vertical slice → human play gate
+  - workflows README table includes statuses; overview.md links the
+    workflow and drops its stale Phase-2 header note; AGENTS.md recipe
+    pointer updated
+allowed_paths:
+  - README.md
+  - docs/workflows/**
+  - docs/architecture/overview.md
+  - AGENTS.md
+forbidden_actions:
+  - editing files outside allowed_paths
+  - marking the new workflow active without usage evidence
+  - changing governance rules or protected paths
+expected_outputs_verification: >
+  bash tools/check.sh -> CHECK: PASS (docs-only). Manual review: new-game.md
+  gates are checkable, README section matches ADR-0006..0009.
+acceptance_criteria:
+  - README status table and hardening section reflect all four remediation
+    commits plus the bug-fix governance commit
+  - new-game.md has [GATE] steps for clean-slate check and human play gate,
+    and is Status draft
+  - overview.md and new-game.md reference each other without duplicating
+    the mechanical steps
+required_evidence:
+  - tools/check output summary in commit body
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change
+report_format: >
+  Commit message per change-rules; evidence in body.

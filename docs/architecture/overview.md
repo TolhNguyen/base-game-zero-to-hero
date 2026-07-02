@@ -1,6 +1,6 @@
 # Architecture Overview
 
-> `game/` does not exist yet (built in Phase 2). This document is the contract it will be built against.
+> Written as the contract for Phase 2; `game/` now exists and is built against it.
 
 ## The three rings
 
@@ -49,3 +49,5 @@ Every save file carries a `schema_version` integer. Loaders migrate forward vers
 ## Starting a new game from this base
 
 Copy the repo → delete `game/demo/` and the demo data in `game/content/` → remove two `project.godot` lines: the `DemoState` autoload and `app/start_scene_id` (or point it at your game's start scene) → toggle the `modules/` the game needs → keep `core/`, `docs/`, `tools/` as-is → `bash tools/check.sh` must still pass.
+
+These are the mechanical steps only; the full idea-to-vertical-slice procedure (vision page, module audit, content model, play gate) is workflow `docs/workflows/new-game.md`.

@@ -50,8 +50,8 @@ Procedure and rationale: `docs/governance/protected-core.md`. Approved Core chan
 
 Before inventing a procedure, check `docs/skills/` (module creation, content
 definitions, verification, core changes) and `docs/workflows/` (feature
-development, bug fixing, failure handling). They are extracted from real work
-and carry evidence links.
+development, bug fixing, failure handling, new-game inception). They are
+extracted from real work and carry evidence links.
 
 ## When things fail
 
