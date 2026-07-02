@@ -1,0 +1,54 @@
+[gd_scene load_steps=3 format=3 uid="uid://pausemenu00001"]
+
+[ext_resource type="Script" path="res://core/ui_kit/pause_menu.gd" id="1_script"]
+[ext_resource type="Theme" path="res://core/ui_kit/theme.tres" id="2_theme"]
+
+[node name="PauseMenu" type="CanvasLayer"]
+layer = 100
+script = ExtResource("1_script")
+
+[node name="Dim" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.5)
+
+[node name="Panel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+theme = ExtResource("2_theme")
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = -90.0
+offset_right = 120.0
+offset_bottom = 90.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+text = "Paused"
+horizontal_alignment = 1
+
+[node name="ResumeButton" type="Button" parent="Panel/VBox"]
+layout_mode = 2
+text = "Resume"
+
+[node name="SettingsButton" type="Button" parent="Panel/VBox"]
+layout_mode = 2
+text = "Settings"
+
+[node name="QuitButton" type="Button" parent="Panel/VBox"]
+layout_mode = 2
+text = "Quit"
+
+[connection signal="pressed" from="Panel/VBox/ResumeButton" to="." method="_on_resume_pressed"]
+[connection signal="pressed" from="Panel/VBox/SettingsButton" to="." method="_on_settings_pressed"]
+[connection signal="pressed" from="Panel/VBox/QuitButton" to="." method="_on_quit_pressed"]
