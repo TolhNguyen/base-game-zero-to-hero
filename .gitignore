@@ -6,6 +6,9 @@ tools/godot/*.zip
 game/.godot/
 *.import/
 
+# gdUnit4 test reports
+game/reports/
+
 # OS noise
 Thumbs.db
 Desktop.ini
