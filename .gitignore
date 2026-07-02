@@ -1,0 +1,11 @@
+# Godot engine binary (portable, downloaded per-machine — see tools/godot/README.md)
+tools/godot/*.exe
+tools/godot/*.zip
+
+# Godot generated caches
+game/.godot/
+*.import/
+
+# OS noise
+Thumbs.db
+Desktop.ini
