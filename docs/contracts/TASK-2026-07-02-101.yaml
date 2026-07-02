@@ -1,0 +1,38 @@
+# Task Contract
+task_id: TASK-2026-07-02-101
+objective: >
+  A topdown_character module exists: a reusable player body with normalized
+  8-direction movement and facing, driven by the default input actions.
+context: >
+  Phase 3 plan T2 (docs/superpowers/plans/2026-07-02-phase3-modules-demo.md).
+  Ring-2 module: depends only on core. Headless tests cannot simulate input,
+  so movement math must be a pure method.
+inputs:
+  - docs/memory/domains/input.md (action names)
+  - docs/architecture/overview.md (ring rules)
+expected_outputs:
+  - game/modules/topdown_character/player.gd (TopdownPlayer)
+  - game/modules/topdown_character/player.tscn (body + collision + placeholder sprite)
+  - game/tests/modules/test_topdown_player.gd
+allowed_paths:
+  - game/modules/topdown_character/**
+  - game/tests/modules/**
+forbidden_actions:
+  - editing files outside allowed_paths
+  - referencing other modules or demo (P8)
+  - adding dependencies or plugins
+expected_outputs_verification: >
+  bash tools/check.sh -> CHECK: PASS including new tests.
+acceptance_criteria:
+  - compute_velocity(Vector2(1,1)) has length speed (diagonal normalized)
+  - compute_velocity(Vector2.ZERO) is ZERO and facing keeps last direction
+  - player.tscn instantiates without errors
+required_evidence:
+  - tools/check output summary in commit body
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change
+report_format: >
+  Commit message per change-rules; evidence in body.
