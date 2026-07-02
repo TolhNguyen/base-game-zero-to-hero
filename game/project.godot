@@ -20,6 +20,7 @@ Registry="*res://core/registry/registry.gd"
 SaveService="*res://core/save/save_service.gd"
 SceneFlow="*res://core/scene_flow/scene_flow.gd"
 Settings="*res://core/settings/settings.gd"
+Platform="*res://core/platform/standalone_platform.gd"
 
 [editor_plugins]
 
