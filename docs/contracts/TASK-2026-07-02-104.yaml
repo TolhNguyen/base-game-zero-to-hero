@@ -1,0 +1,38 @@
+# Task Contract
+task_id: TASK-2026-07-02-104
+objective: >
+  An inventory module exists: ItemDef resources and an Inventory node with
+  stack limits, EventBus announcements, and save-provider support.
+context: >
+  Phase 3 plan T5. Ring-2. Stack limits come from ItemDef via Registry (P7);
+  capture/restore plugs into SaveService (see save-system domain doc).
+inputs:
+  - docs/memory/domains/save-system.md
+  - docs/memory/domains/registry.md
+expected_outputs:
+  - game/modules/inventory/item_def.gd (ItemDef)
+  - game/modules/inventory/inventory.gd (Inventory)
+  - game/tests/modules/test_inventory.gd
+allowed_paths:
+  - game/modules/inventory/**
+  - game/tests/modules/**
+  - game/tests/fixtures/**
+forbidden_actions:
+  - editing files outside allowed_paths
+  - referencing other modules or demo (P8)
+  - adding dependencies or plugins
+expected_outputs_verification: >
+  bash tools/check.sh -> CHECK: PASS including new tests.
+acceptance_criteria:
+  - add(id, 5) with max_stack 3 stores 3 and returns remainder 2
+  - remove() returns the actually-removed amount; count() reports totals
+  - capture()/restore() round-trips; &"inventory.changed" published on change
+required_evidence:
+  - tools/check output summary in commit body
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change
+report_format: >
+  Commit message per change-rules; evidence in body.
