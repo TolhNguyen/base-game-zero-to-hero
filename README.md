@@ -30,4 +30,6 @@ Read `AGENTS.md` first. It is the entry point for every agent session.
 | 2 — Core Foundation | `game/core/`, tests, `tools/check` | **Complete** (2026-07-02) |
 | 3 — Modules + Demo Sandbox | 5 gameplay modules, playable demo | **Complete** (2026-07-02) |
 | 4 — Production Hardening | Skills, workflows, art integration | **Complete** (2026-07-02) |
-| 5 — Handover | Maintainer guide, final audit | **In progress** |
+| 5 — Handover | Maintainer guide, final audit | **Complete** (2026-07-02) |
+
+The base is operational. Human maintainers: see `docs/MAINTAINER.md`. Building a real game from this base: see "Starting a new game" in `docs/architecture/overview.md`.
