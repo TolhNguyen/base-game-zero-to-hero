@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="Definition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/registry/definition.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"item.decoy"
