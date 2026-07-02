@@ -18,6 +18,7 @@ Log="*res://core/debug/log.gd"
 EventBus="*res://core/events/event_bus.gd"
 Registry="*res://core/registry/registry.gd"
 SaveService="*res://core/save/save_service.gd"
+SceneFlow="*res://core/scene_flow/scene_flow.gd"
 
 [editor_plugins]
 
