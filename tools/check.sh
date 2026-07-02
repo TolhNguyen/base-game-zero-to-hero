@@ -43,4 +43,15 @@ TEST_EXIT=$?
 echo "$TEST_OUT" | grep -E "Overall Summary|test cases" | tail -2
 [ $TEST_EXIT -eq 0 ] || { echo "$TEST_OUT" | tail -30; fail "tests failed (exit $TEST_EXIT)"; }
 
+# --- 5. Boot smoke (ADR-0005) ---------------------------------------------------
+if [ "$FAST" -eq 0 ]; then
+	echo "check: boot smoke..."
+	BOOT_OUT="$("$GODOT" --headless --path "$GAME" --quit-after 30 2>&1)"
+	if echo "$BOOT_OUT" | grep -qE "SCRIPT ERROR|Parse Error|Failed to instantiate an autoload"; then
+		echo "$BOOT_OUT" | grep -E "SCRIPT ERROR|Parse Error|Failed to instantiate|at: " | head -10
+		fail "boot smoke found script errors"
+	fi
+	echo "check: boot smoke OK"
+fi
+
 echo "CHECK: PASS"
