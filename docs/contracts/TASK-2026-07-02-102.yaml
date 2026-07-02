@@ -1,0 +1,36 @@
+# Task Contract
+task_id: TASK-2026-07-02-102
+objective: >
+  An interaction module exists: Interactable areas and an Interactor that
+  picks the nearest one and triggers it, announcing via EventBus.
+context: >
+  Phase 3 plan T3. Ring-2 module; cross-module effects (dialogue, loot)
+  are wired by demo glue or EventBus topics — never direct module refs.
+inputs:
+  - docs/memory/domains/events.md (topic conventions)
+expected_outputs:
+  - game/modules/interaction/interactable.gd (Interactable)
+  - game/modules/interaction/interactor.gd (Interactor)
+  - game/tests/modules/test_interaction.gd
+allowed_paths:
+  - game/modules/interaction/**
+  - game/tests/modules/**
+forbidden_actions:
+  - editing files outside allowed_paths
+  - referencing other modules or demo (P8)
+  - adding dependencies or plugins
+expected_outputs_verification: >
+  bash tools/check.sh -> CHECK: PASS including new tests.
+acceptance_criteria:
+  - interact() emits `interacted` and publishes &"interaction.triggered" {id}
+  - Interactor.nearest() picks the closest overlapping Interactable
+  - try_interact() with nothing in range is a safe no-op returning false
+required_evidence:
+  - tools/check output summary in commit body
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change
+report_format: >
+  Commit message per change-rules; evidence in body.
