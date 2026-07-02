@@ -29,5 +29,5 @@ Read `AGENTS.md` first. It is the entry point for every agent session.
 | 1 — Blueprint | Constitution, roles, governance docs | **Complete** (2026-07-02) |
 | 2 — Core Foundation | `game/core/`, tests, `tools/check` | **Complete** (2026-07-02) |
 | 3 — Modules + Demo Sandbox | 5 gameplay modules, playable demo | **Complete** (2026-07-02) |
-| 4 — Production Hardening | Skills, workflows, art integration | **In progress** |
-| 5 — Handover | Maintainer guide, final audit | Pending |
+| 4 — Production Hardening | Skills, workflows, art integration | **Complete** (2026-07-02) |
+| 5 — Handover | Maintainer guide, final audit | **In progress** |
