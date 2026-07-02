@@ -1,0 +1,45 @@
+# Task Contract
+task_id: TASK-2026-07-02-109
+objective: >
+  Inventory.add() rejects ids that are not registered ItemDefs instead of
+  silently accepting them with a default stack of 99.
+context: >
+  External code review 2026-07-02: the fallback contradicted the codebase's
+  fail-early handling of stable IDs (Registry, SceneFlow, QuestTracker all
+  reject unknown ids). A typo'd id must be an error, not a valid item.
+  restore() stays permissive: save data is trusted (ids may leave the
+  registry between versions).
+inputs:
+  - game/modules/inventory/inventory.gd
+  - game/tests/modules/test_inventory.gd
+  - game/tests/fixtures/inventory/
+expected_outputs:
+  - inventory.gd add() push_errors and returns full count for unknown or
+    non-ItemDef ids; _max_stack fallback removed
+  - tests covering rejection of unknown id, rejection of non-item
+    definition, and restore() permissiveness
+allowed_paths:
+  - game/modules/inventory/**
+  - game/tests/modules/test_inventory.gd
+  - game/tests/fixtures/inventory/**
+forbidden_actions:
+  - editing files outside allowed_paths
+  - changing the add()/remove() overflow return contract
+  - adding dependencies or plugins
+expected_outputs_verification: >
+  bash tools/check.sh -> CHECK: PASS including 8 test cases in
+  test_inventory.gd.
+acceptance_criteria:
+  - add() of an unregistered id stores nothing, publishes nothing, and
+    returns the full count
+  - add() of a registered non-ItemDef id is rejected the same way
+  - restore() still accepts ids absent from the registry
+required_evidence:
+  - tools/check output summary in commit body
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change
+report_format: >
+  Commit message per change-rules; evidence in body.

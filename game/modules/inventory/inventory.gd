@@ -19,10 +19,16 @@ func _ready() -> void:
 
 
 ## Adds up to `count` units. Returns the overflow that did NOT fit.
+## Unknown or non-item ids are rejected outright (fail early, like the
+## other id consumers); the whole `count` comes back as overflow.
 func add(id: StringName, count: int = 1) -> int:
 	if count <= 0:
 		return 0
-	var limit := _max_stack(id)
+	var def := _item_def(id)
+	if def == null:
+		push_error("Inventory: unknown item id '%s'" % id)
+		return count
+	var limit := def.max_stack
 	var current: int = _counts.get(id, 0)
 	var accepted := mini(count, limit - current)
 	if accepted <= 0:
@@ -75,12 +81,12 @@ func restore(data: Dictionary) -> void:
 		_counts[StringName(key)] = int(data[key])
 
 
-func _max_stack(id: StringName) -> int:
+func _item_def(id: StringName) -> ItemDef:
 	if registry and registry.has_def(id):
 		var def: Definition = registry.get_def(id)
 		if def is ItemDef:
-			return (def as ItemDef).max_stack
-	return 99
+			return def as ItemDef
+	return null
 
 
 func _announce(id: StringName, delta: int) -> void:

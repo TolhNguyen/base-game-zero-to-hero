@@ -37,10 +37,18 @@ func test_stack_limit_returns_remainder() -> void:
 	assert_int(inv.add(&"item.test_apple", 1)).is_equal(1)
 
 
-func test_unknown_item_gets_default_stack() -> void:
+func test_unknown_item_is_rejected() -> void:
 	var inv := _wired()
-	assert_int(inv.add(&"item.unregistered", 50)).is_equal(0)
-	assert_int(inv.count(&"item.unregistered")).is_equal(50)
+	assert_int(inv.add(&"item.unregistered", 50)).is_equal(50)
+	assert_int(inv.count(&"item.unregistered")).is_equal(0)
+	assert_int(_events.size()).is_equal(0)
+
+
+func test_non_item_definition_is_rejected() -> void:
+	var inv := _wired()
+	# scene.test_home is a fixture SceneDef, not an ItemDef
+	assert_int(inv.add(&"scene.test_home", 1)).is_equal(1)
+	assert_int(inv.count(&"scene.test_home")).is_equal(0)
 
 
 func test_remove_returns_actual_amount() -> void:
@@ -65,11 +73,17 @@ func test_changed_topic_published_with_totals() -> void:
 func test_capture_restore_round_trip() -> void:
 	var inv := _wired()
 	inv.add(&"item.test_apple", 2)
-	inv.add(&"item.unregistered", 7)
 	var snapshot := inv.capture()
 
 	var other := _wired()
 	other.restore(snapshot)
 	assert_int(other.count(&"item.test_apple")).is_equal(2)
-	assert_int(other.count(&"item.unregistered")).is_equal(7)
-	assert_that(other.item_ids()).contains([&"item.test_apple", &"item.unregistered"])
+	assert_that(other.item_ids()).contains([&"item.test_apple"])
+
+
+func test_restore_trusts_save_data_ids() -> void:
+	# restore() takes save data as-is; validation happened at add() time
+	# (an id may legitimately leave the registry between game versions).
+	var inv := _wired()
+	inv.restore({"item.from_old_version": 4})
+	assert_int(inv.count(&"item.from_old_version")).is_equal(4)
