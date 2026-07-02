@@ -1,0 +1,55 @@
+task_id: TASK-2026-07-02-202
+objective: >
+  Card War has a pure CwMapGrid RefCounted class for terrain lookup, movement
+  costs, Dijkstra pathfinding, turn counting, and tile letter queries.
+context: >
+  Implements the card_war vertical-slice map-grid logic after
+  TASK-2026-07-02-201 established card_war definition resources. Required
+  project rules are CONSTITUTION.md, docs/governance/change-rules.md, and
+  docs/governance/task-contract-template.md.
+inputs:
+  - Owner-approved TASK-2026-07-02-202 instructions in the executor prompt
+  - Existing card_war definition files under game/modules/card_war/sim/
+  - Existing card_war test style in game/tests/card_war/test_defs.gd
+expected_outputs:
+  - game/modules/card_war/sim/cw_map_grid.gd defines CwMapGrid
+  - game/tests/card_war/test_map_grid.gd covers size, costs, pathfinding, turns, and tile lookup
+  - Generated .uid files for new Godot scripts if Godot creates them
+allowed_paths:
+  - game/modules/card_war/sim/cw_map_grid.gd
+  - game/tests/card_war/test_map_grid.gd
+  - docs/contracts/TASK-2026-07-02-202.yaml
+  - game/modules/card_war/sim/cw_map_grid.gd.uid
+  - game/tests/card_war/test_map_grid.gd.uid
+forbidden_actions:
+  - editing files outside allowed_paths
+  - editing existing docs/contracts execution records
+  - changing public signatures of game/core/ (Core-level; escalate)
+  - editing game/core, tools/check*, tools/validate_*, docs/governance, or .githooks
+  - adding dependencies or plugins
+expected_outputs_verification: >
+  First run the focused GdUnit suite before implementation and observe failure
+  because cw_map_grid.gd is missing. After implementation, run the focused suite
+  and expect PASS with 7 tests. Then run rtk proxy C:\PROGRA~1\Git\bin\bash.exe
+  tools/check.sh --fast and expect PASS.
+acceptance_criteria:
+  - CwMapGrid.from_rows builds size, terrain letters, and movement costs from rows and letter_cost
+  - in_bounds, letter_at, move_cost, and tiles_with_letter return correct pure lookup results
+  - find_path returns the cheapest 4-neighbour path excluding the start and including the destination
+  - find_path returns an empty typed Vector2i array for invalid or unreachable paths
+  - turns_for_path counts turns from movement costs and points_per_turn
+  - CwMapGrid remains pure logic with no scene tree or autoload dependencies
+  - Focused map-grid GdUnit suite and tools/check.sh --fast pass
+required_evidence:
+  - failing focused GdUnit output from the RED step
+  - passing focused GdUnit output after implementation
+  - passing tools/check.sh --fast output summary
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change
+report_format: >
+  Reply with: Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT;
+  what was implemented; what was tested and exact results; commit SHA; files
+  changed; self-review findings; any concerns.
