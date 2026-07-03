@@ -1,0 +1,48 @@
+task_id: TASK-2026-07-02-215
+objective: >
+  Record the Task 208 post-review transport validation clarification without
+  modifying the immutable TASK-2026-07-02-208 execution record.
+root_cause: >
+  Task 208 quality review found transport validation gaps after
+  TASK-2026-07-02-208 had already been committed; fixing the validation
+  correctly required CwState, but committed task contracts are immutable and
+  the original allowed_paths could not be amended.
+context: >
+  Follow-up task required by docs/contracts/README.md and
+  docs/governance/protected-core.md: contract mistakes are fixed with a
+  follow-up task, never by editing committed contract history. This record
+  clarifies final behavior in commit 65b38297132e51a2449b9c97006a4977fcf04696.
+inputs:
+  - docs/contracts/TASK-2026-07-02-208.yaml immutable execution record
+  - Task 208 quality review findings for city-food reservations, high-cost convoy paths, and moving army convoy targets
+  - Final Task 208 implementation at commit 65b38297132e51a2449b9c97006a4977fcf04696
+expected_outputs:
+  - docs/contracts/TASK-2026-07-02-215.yaml records the Task 208 clarification as a follow-up execution record
+allowed_paths:
+  - docs/contracts/TASK-2026-07-02-215.yaml
+forbidden_actions:
+  - editing files outside allowed_paths
+  - editing existing docs/contracts execution records
+  - editing game/core, tools/check*, tools/validate_*, docs/governance, existing ADRs/contracts, or .githooks
+  - changing game behavior or adding dependencies/plugins
+expected_outputs_verification: >
+  Run rtk git diff --check and expect no whitespace errors. Run
+  rtk proxy C:\PROGRA~1\Git\bin\bash.exe tools/check.sh --fast and expect
+  CHECK: PASS.
+acceptance_criteria:
+  - this follow-up does not edit TASK-2026-07-02-208.yaml or any other committed contract
+  - Task 208 final behavior is clarified: CwState includes transport, march, and city feast in shared pending city-food reservations
+  - Task 208 final behavior is clarified: transport validation rejects paths containing a step whose move cost exceeds move_points_per_turn
+  - Task 208 final behavior is clarified: convoy delivery to an army succeeds only when the target army still exists at the convoy arrival tile; moved or missing targets lose the food
+  - the obvious symptom patch of editing TASK-2026-07-02-208.yaml remains forbidden by contract immutability
+required_evidence:
+  - rtk git diff --check output
+  - tools/check.sh --fast output summary
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires editing an existing committed contract
+  - task requires touching paths outside allowed_paths
+report_format: >
+  Reply with: status, clarification recorded, evidence, commit SHA, and any
+  remaining review concerns.
