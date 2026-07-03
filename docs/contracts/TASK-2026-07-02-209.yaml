@@ -1,0 +1,90 @@
+task_id: TASK-2026-07-02-209
+objective: >
+  Card War has tutorial content definitions, a content-to-state builder, and
+  an integration playthrough that proves the tutorial scenario can be won.
+context: >
+  Reconstructed card_war vertical-slice Task 209 from owner prompt, replacing
+  the historical Task 109 id. Read and obey AGENTS.md, CONSTITUTION.md,
+  docs/governance/change-rules.md, docs/governance/task-contract-template.md,
+  docs/skills/add-content-definition.md, docs/skills/verify-with-tools-check.md,
+  and the current card_war sim APIs from Tasks 202-208.
+inputs:
+  - Owner-approved TASK-2026-07-02-209 instructions in the executor prompt
+  - Existing CwCardDef, CwGeneralDef, CwTerrainDef, CwMapDef, and CwScenarioDef schemas
+  - Existing CwState, CwMapGrid, CwTuning, CwOrder, and CwResolver sim APIs
+  - Existing content registry integrity test in game/tests/demo/test_content.gd
+expected_outputs:
+  - docs/contracts/TASK-2026-07-02-209.yaml records this task contract
+  - game/modules/card_war/sim/cw_builder.gd builds a ready CwState from passed content definitions without touching Registry or autoloads
+  - Six tutorial card resources exist under game/content/cards with stable ids card.march, card.gather_food, card.build_camp, card.transport, card.assault, and card.feast
+  - game/content/generals/general.asun.tres defines Marshal Asun
+  - Six tutorial terrain resources exist under game/content/terrains with stable ids terrain.plains, terrain.forest, terrain.river, terrain.mountain, terrain.city_home, and terrain.city_enemy
+  - game/content/maps/map.tutorial_01.tres defines the 16x16 tutorial map rows
+  - game/content/scenarios/scenario.tutorial_01.tres defines tutorial deck, map id, and general id
+  - game/tests/demo/test_content.gd expects the content registry count to be 20 and includes all 15 new ids
+  - game/tests/card_war/test_playthrough.gd covers builder wiring and a scripted seven-turn victory
+  - Generated game/modules/card_war/sim/cw_builder.gd.uid or game/tests/card_war/test_playthrough.gd.uid if Godot creates them
+allowed_paths:
+  - docs/contracts/TASK-2026-07-02-209.yaml
+  - game/modules/card_war/sim/cw_builder.gd
+  - game/modules/card_war/sim/cw_builder.gd.uid
+  - game/content/cards/card.march.tres
+  - game/content/cards/card.gather_food.tres
+  - game/content/cards/card.build_camp.tres
+  - game/content/cards/card.transport.tres
+  - game/content/cards/card.assault.tres
+  - game/content/cards/card.feast.tres
+  - game/content/generals/general.asun.tres
+  - game/content/terrains/terrain.plains.tres
+  - game/content/terrains/terrain.forest.tres
+  - game/content/terrains/terrain.river.tres
+  - game/content/terrains/terrain.mountain.tres
+  - game/content/terrains/terrain.city_home.tres
+  - game/content/terrains/terrain.city_enemy.tres
+  - game/content/maps/map.tutorial_01.tres
+  - game/content/scenarios/scenario.tutorial_01.tres
+  - game/tests/demo/test_content.gd
+  - game/tests/card_war/test_playthrough.gd
+  - game/tests/card_war/test_playthrough.gd.uid
+forbidden_actions:
+  - editing files outside allowed_paths
+  - editing existing docs/contracts execution records
+  - editing game/core, tools/check*, tools/validate_*, docs/governance, existing ADRs/contracts, or .githooks
+  - implementing Task 210 UI, scene, or boot behavior
+  - changing public signatures of game/core/ or adding dependencies/plugins
+expected_outputs_verification: >
+  First create game/tests/card_war/test_playthrough.gd and run its focused
+  GdUnit suite before implementation, expecting failure because the builder
+  and content resources are missing. After implementation, run focused
+  game/tests/card_war/test_playthrough.gd and expect PASS. Run focused
+  game/tests/demo/test_content.gd and expect PASS. Then run rtk proxy
+  C:\PROGRA~1\Git\bin\bash.exe tools/check.sh and expect CHECK: PASS.
+acceptance_criteria:
+  - CwBuilder.build constructs letter movement costs from CwTerrainDef resources and creates a CwMapGrid from CwMapDef.rows
+  - CwBuilder.build sets up CwState with CwTuning.from_def(scenario), seed_value, all card ids/order types/costs, and all general ids/combat factors/loss reductions
+  - CwBuilder.build creates city.home from H tiles and scenario home values with wall factor 1.0
+  - CwBuilder.build creates city.enemy from E tiles and scenario enemy values with scenario.enemy_wall_factor
+  - CwBuilder.build expands scenario.deck dictionary copies into the deck passed to CwState.set_deck
+  - The six card resources have exact requested ids, display names, energy costs, and order_type values
+  - The general resource has id general.asun, display name Marshal Asun, class warrior, combat_factor 1.0, and loss_reduction 0.25
+  - The six terrain resources have exact requested ids, display names, letters, and move costs
+  - The tutorial map resource contains exactly the 16 requested 16-character rows
+  - The tutorial scenario resource has id scenario.tutorial_01, map_id map.tutorial_01, three copies of each tutorial card, and general_ids containing general.asun
+  - game/tests/demo/test_content.gd scans 20 definitions, checks all 15 new ids, and does not add map or scenario ids to the scene path test
+  - game/tests/card_war/test_playthrough.gd proves builder wiring and a scripted victory by turn 7 with the expected final home food ledger
+  - Focused playthrough, focused demo content test, and full tools/check.sh pass
+required_evidence:
+  - failing focused GdUnit output from the RED game/tests/card_war/test_playthrough.gd step
+  - passing focused GdUnit output for game/tests/card_war/test_playthrough.gd
+  - passing focused GdUnit output for game/tests/demo/test_content.gd
+  - passing full tools/check.sh output summary
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change or dependency/plugin addition
+  - full tools/check.sh cannot complete and fast check is the only viable verification
+report_format: >
+  Reply with: Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT;
+  what was implemented; what was tested and exact results; commit SHA; files
+  changed; self-review findings; any concerns.

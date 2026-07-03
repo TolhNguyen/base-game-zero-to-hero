@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="CwGeneralDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://modules/card_war/sim/cw_general_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"general.asun"
+display_name = "Marshal Asun"
+general_class = &"warrior"
+combat_factor = 1.0
+loss_reduction = 0.25

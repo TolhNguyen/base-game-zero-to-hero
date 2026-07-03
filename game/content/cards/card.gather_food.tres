@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="CwCardDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://modules/card_war/sim/cw_card_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"card.gather_food"
+display_name = "Gather Food"
+energy_cost = 1
+order_type = &"gather_food"
