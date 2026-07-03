@@ -17,6 +17,9 @@ var _report_panel: PanelContainer
 var _report_text: RichTextLabel
 var _result_label: Label
 var _card_names: Dictionary = {}
+var _card: StringName = &""
+var _stage: StringName = &""
+var _params: Dictionary = {}
 
 
 func _ready() -> void:
@@ -208,18 +211,108 @@ func _refresh() -> void:
 	map_view.refresh()
 
 
-func _add_hand_entry(card) -> void:
-	var card_id := StringName(card)
-	var label := Label.new()
-	label.text = "%s - %d energy" % [
-		String(_card_names.get(card_id, card_id)),
-		state.card_cost(card_id),
-	]
-	_hand_box.add_child(label)
+func _add_hand_entry(card: StringName) -> void:
+	var b := Button.new()
+	b.text = "%s (%d)" % [_card_names.get(card, String(card)), state.card_cost(card)]
+	b.disabled = state.energy < state.card_cost(card) or state.result != &""
+	b.pressed.connect(_begin_card.bind(card))
+	_hand_box.add_child(b)
+
+
+func _begin_card(card: StringName) -> void:
+	_cancel_order()
+	_card = card
+	match state.card_type(card):
+		&"march":
+			var free: Array[StringName] = state.free_generals()
+			if free.is_empty():
+				_status_label.text = "No free general to lead the march."
+				_card = &""
+				return
+			_params["general_id"] = free[0]
+			_params["from_city"] = _first_player_city()
+			_stage = &"pick_dest"
+			_troops_spin.visible = true
+			_status_label.text = "March: set troops, then click a destination tile."
+		&"gather_food":
+			_params["city"] = _first_player_city()
+			_order_info.text = "Gather food at %s." % _params["city"]
+			_confirm_btn.visible = true
+		&"build_camp":
+			_stage = &"pick_army"
+			_status_label.text = "Build camp: click one of your armies."
+		&"transport":
+			_params["from_city"] = _first_player_city()
+			_stage = &"pick_target"
+			_food_spin.visible = true
+			_status_label.text = "Transport: set amount, then click a camp or army."
+		&"assault":
+			_stage = &"pick_army"
+			_status_label.text = "Assault: click your army, then the enemy city."
+		&"feast":
+			_stage = &"pick_feast"
+			_status_label.text = "Feast: click a victorious army or captured city."
+		_:
+			_status_label.text = "Unknown card type."
+			_card = &""
 
 
 func _on_tile_clicked(tile: Vector2i) -> void:
-	_show_tile_info(tile)
+	if _card == &"":
+		_show_tile_info(tile)
+		return
+	match _stage:
+		&"pick_dest":
+			_params["to"] = tile
+			_update_march_preview()
+		&"pick_army":
+			var a: CwArmy = state.army_at(tile)
+			if a == null:
+				_status_label.text = "No army on that tile."
+				return
+			_params["army_id"] = a.id
+			if state.card_type(_card) == &"assault":
+				_stage = &"pick_enemy_city"
+				_status_label.text = "Now click the enemy city."
+			else:
+				_order_info.text = "Build camp at %s." % str(a.pos)
+				_confirm_btn.visible = true
+		&"pick_enemy_city":
+			var c: CwCity = state.city_at(tile)
+			if c == null or c.owner_side != &"enemy":
+				_status_label.text = "Click an enemy city tile."
+				return
+			_params["city"] = c.id
+			_order_info.text = "Assault %s." % c.id
+			_confirm_btn.visible = true
+		&"pick_target":
+			var camp: CwCamp = state.camp_at(tile)
+			var army: CwArmy = state.army_at(tile)
+			if camp != null:
+				_params["target_kind"] = &"camp"
+				_params["target_id"] = camp.id
+			elif army != null:
+				_params["target_kind"] = &"army"
+				_params["target_id"] = army.id
+			else:
+				_status_label.text = "Click a camp or an army."
+				return
+			_order_info.text = "Send %d food." % int(_food_spin.value)
+			_confirm_btn.visible = true
+		&"pick_feast":
+			var fa: CwArmy = state.army_at(tile)
+			var fc: CwCity = state.city_at(tile)
+			if fa != null:
+				_params["target_kind"] = &"army"
+				_params["target_id"] = fa.id
+			elif fc != null and fc.owner_side == &"player":
+				_params["target_kind"] = &"city"
+				_params["target_id"] = fc.id
+			else:
+				_status_label.text = "Click an army or one of your cities."
+				return
+			_order_info.text = "Hold a victory feast."
+			_confirm_btn.visible = true
 
 
 func _show_tile_info(tile) -> void:
@@ -270,6 +363,7 @@ func _show_tile_info(tile) -> void:
 func _end_turn() -> void:
 	if state == null or state.result != &"":
 		return
+	_cancel_order()
 
 	var events: Array[Dictionary] = CwResolver.resolve(state)
 	var lines := PackedStringArray()
@@ -340,5 +434,53 @@ func _event_text(e: Dictionary) -> String:
 			return String(t)
 
 
+func _update_march_preview() -> void:
+	var city: CwCity = state.cities[_params["from_city"]]
+	var path: Array[Vector2i] = state.map.find_path(state.spawn_tile(city), _params["to"])
+	if path.is_empty():
+		_order_info.text = "That destination is unreachable."
+		_confirm_btn.visible = false
+		return
+	var troops := int(_troops_spin.value)
+	var turns := state.map.turns_for_path(path, state.tuning.move_points_per_turn)
+	var food := state.march_food_needed(troops, path)
+	_order_info.text = "March %d troops: %d turn(s) to arrive, %d food budget." % [troops, turns, food]
+	_confirm_btn.visible = true
+
+
 func _confirm_order() -> void:
-	pass
+	if _card == &"":
+		return
+	var o := CwOrder.new()
+	o.card_id = _card
+	o.type = state.card_type(_card)
+	if o.type == &"march":
+		_params["troops"] = int(_troops_spin.value)
+	if o.type == &"transport":
+		_params["food"] = int(_food_spin.value)
+	o.params = _params.duplicate()
+	var err: Error = state.play_card(o)
+	if err != OK:
+		_status_label.text = "Order rejected (err %d): check troops, food, energy and target." % err
+		return
+	_status_label.text = "Order queued for this turn."
+	_cancel_order()
+	_refresh()
+
+
+func _cancel_order() -> void:
+	_card = &""
+	_stage = &""
+	_params = {}
+	_order_info.text = ""
+	_troops_spin.visible = false
+	_food_spin.visible = false
+	_confirm_btn.visible = false
+
+
+func _first_player_city() -> StringName:
+	for value: Variant in state.cities.values():
+		var c: CwCity = value as CwCity
+		if c.owner_side == &"player":
+			return c.id
+	return &""

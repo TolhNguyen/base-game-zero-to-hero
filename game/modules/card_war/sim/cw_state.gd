@@ -76,6 +76,14 @@ func set_general_busy(id: StringName, busy: bool) -> void:
 		_busy.erase(id)
 
 
+func free_generals() -> Array[StringName]:
+	var out: Array[StringName] = []
+	for id: StringName in _generals.keys():
+		if not is_general_busy(id):
+			out.append(id)
+	out.sort()
+	return out
+
 func add_city(id: StringName, owner_side: StringName, tiles: Array[Vector2i],
 		troops: int, food: int, production: int, wall: float) -> CwCity:
 	var c: CwCity = CwCity.new()

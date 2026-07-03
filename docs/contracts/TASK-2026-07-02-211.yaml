@@ -1,0 +1,77 @@
+# Task Contract - copy this file, fill every field. Executors: refuse tasks with empty fields.
+task_id: TASK-2026-07-02-211
+objective: >
+  Card War battle scene hand entries become playable buttons that collect
+  order targets and queue validated card orders through CwState.play_card().
+context: >
+  Task 210 completed the Card War battle scene shell. This task adds only the
+  Task 211 hand-button and targeting flow, preserving CwState.play_card()
+  validation semantics as the source of truth and avoiding Task 212/domain-doc
+  or play-gate work.
+inputs:
+  - Owner-provided Task 211 requirements in this executor session.
+  - Existing Card War battle scene UI in game/modules/card_war/ui/battle.gd.
+  - Existing Card War sim APIs in game/modules/card_war/sim/cw_state.gd and CwOrder params.
+  - Existing battle scene test suite in game/tests/card_war/test_battle_scene.gd.
+expected_outputs:
+  - docs/contracts/TASK-2026-07-02-211.yaml records this task.
+  - game/tests/card_war/test_battle_scene.gd covers march order queueing and rejected-order UI feedback.
+  - game/modules/card_war/sim/cw_state.gd exposes free_generals().
+  - game/modules/card_war/ui/battle.gd renders hand cards as buttons and supports march, gather food, build camp, transport, assault, and feast targeting flows.
+allowed_paths:
+  - docs/contracts/TASK-2026-07-02-211.yaml
+  - game/modules/card_war/ui/battle.gd
+  - game/modules/card_war/ui/battle.gd.uid
+  - game/modules/card_war/sim/cw_state.gd
+  - game/modules/card_war/sim/cw_state.gd.uid
+  - game/tests/card_war/test_battle_scene.gd
+  - game/tests/card_war/test_battle_scene.gd.uid
+forbidden_actions:
+  - editing files outside allowed_paths
+  - editing existing committed contracts
+  - editing Protected Core paths
+  - changing public signatures of game/core/
+  - changing CwState.play_card validation semantics
+  - adding dependencies, Godot plugins, or editor addons
+  - implementing Task 212/domain docs/play gate
+  - merging, rebasing, or pulling
+expected_outputs_verification: >
+  After appending tests and before production implementation, run the focused
+  battle scene suite; expected RED for missing _begin_card or incomplete order
+  flow. After implementation, run the focused battle scene suite; expected PASS
+  with at least 7 tests. Then run
+  rtk proxy C:\PROGRA~1\Git\bin\bash.exe tools/check.sh; expected CHECK: PASS.
+acceptance_criteria:
+  - The focused battle scene suite fails before implementation for the expected missing _begin_card or targeting-flow reason.
+  - Hand entries are Buttons showing display name and energy cost, disabled when energy is insufficient or the battle has a result.
+  - CwState.free_generals() returns unbusy general ids sorted ascending.
+  - March begins with the first free general and first player city, shows troop selection, previews turns and food, requires a reachable clicked destination, and queues params including troops and to.
+  - Gather food starts from the first player city and can be confirmed without tile targeting.
+  - Build camp targets an own army by tile click before confirmation.
+  - Transport starts from the first player city, shows food selection, targets a camp or army by tile click before confirmation.
+  - Assault targets an army first and then an enemy city before confirmation.
+  - Feast targets an army or player city by tile click before confirmation.
+  - _confirm_order() calls state.play_card(), reports rejection without mutating state on error, or reports queued status, clears the active flow, refreshes the battle UI, and leaves validation to CwState.
+  - _on_tile_clicked(tile) shows tile info when no card is active and advances the active targeting stage otherwise.
+  - _end_turn() clears any half-built order immediately after the result guard and before resolve.
+  - Focused battle scene suite passes after implementation.
+  - Full tools/check.sh passes with boot smoke OK.
+required_evidence:
+  - Focused battle scene RED command and failure summary.
+  - Focused battle scene PASS command and summary with test count.
+  - Full tools/check.sh PASS summary including test count and boot smoke.
+  - git status --short --untracked-files=all showing only intended task files before staging.
+  - git status --short --untracked-files=all clean after commit.
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change
+  - task requires changing CwState.play_card validation semantics
+  - focused or full verification fails for a reason outside allowed_paths
+  - Git Bash fails with a sandbox or Win32 permission error
+report_format: >
+  Reply with: Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT;
+  what was implemented; verification commands and exact results including RED,
+  focused PASS, and full check PASS; commit SHA; files changed; self-review
+  findings; any concerns.

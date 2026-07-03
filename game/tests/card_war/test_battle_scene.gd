@@ -127,3 +127,40 @@ func test_build_state_rejects_missing_scenario_deck_card() -> void:
 		result = battle._build_state(reg)
 	).is_push_error("Card War battle scenario deck references missing card 'card.assault'.")
 	assert_object(result).is_null()
+
+
+func test_march_order_flow_queues_order() -> void:
+	var scene: PackedScene = load("res://modules/card_war/ui/battle.tscn")
+	var battle: Node2D = auto_free(scene.instantiate())
+	add_child(battle)
+	var s: CwState = battle.state
+	s.hand.clear()
+	s.hand.append(&"card.march")
+	battle._refresh()
+	battle._begin_card(&"card.march")
+	battle._troops_spin.value = 2000
+	battle._on_tile_clicked(Vector2i(8, 3))
+	battle._confirm_order()
+	assert_int(s.pending.size()).is_equal(1)
+	assert_int(s.energy).is_equal(1)  # 3 - march cost 2
+	var o: CwOrder = s.pending[0]
+	assert_that(o.params["to"]).is_equal(Vector2i(8, 3))
+	assert_int(int(o.params["troops"])).is_equal(2000)
+	remove_child(battle)
+
+
+func test_rejected_order_reports_reason_and_keeps_state() -> void:
+	var scene: PackedScene = load("res://modules/card_war/ui/battle.tscn")
+	var battle: Node2D = auto_free(scene.instantiate())
+	add_child(battle)
+	var s: CwState = battle.state
+	s.hand.clear()
+	s.hand.append(&"card.march")
+	battle._begin_card(&"card.march")
+	battle._troops_spin.value = 9000  # more than the city holds
+	battle._on_tile_clicked(Vector2i(8, 3))
+	battle._confirm_order()
+	assert_int(s.pending.size()).is_equal(0)
+	assert_int(s.energy).is_equal(3)
+	assert_bool(battle._status_label.text.contains("rejected")).is_true()
+	remove_child(battle)
