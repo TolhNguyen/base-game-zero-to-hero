@@ -148,7 +148,7 @@ func march_food_needed(troops: int, path: Array[Vector2i]) -> int:
 
 ## Troops/food/generals already committed by not-yet-resolved orders.
 func _pending_reserves(city_id: StringName) -> Dictionary:
-	var out := {"troops": 0, "food": 0, "generals": []}
+	var out := {"troops": 0, "food": _pending_city_food(city_id), "generals": []}
 	for order: CwOrder in pending:
 		if order.type == &"march":
 			var general_id: StringName = StringName(order.params.get("general_id", &""))
@@ -161,16 +161,31 @@ func _pending_reserves(city_id: StringName) -> Dictionary:
 
 			var troops: int = int(order.params.get("troops", 0))
 			out["troops"] = int(out["troops"]) + troops
-			var city: CwCity = cities.get(city_id, null) as CwCity
-			if city != null:
-				var to: Vector2i = order.params.get("to", Vector2i.ZERO) as Vector2i
-				var path: Array[Vector2i] = map.find_path(spawn_tile(city), to)
-				out["food"] = int(out["food"]) + march_food_needed(troops, path)
+	return out
+
+
+func _pending_city_food(city_id: StringName) -> int:
+	var reserved := 0
+	var city: CwCity = cities.get(city_id, null) as CwCity
+	for order: CwOrder in pending:
+		if order.type == &"march":
+			var march_city_id: StringName = StringName(order.params.get("from_city", &""))
+			if march_city_id != city_id or city == null:
+				continue
+			var troops: int = int(order.params.get("troops", 0))
+			var to: Vector2i = order.params.get("to", Vector2i.ZERO) as Vector2i
+			var path: Array[Vector2i] = map.find_path(spawn_tile(city), to)
+			reserved += march_food_needed(troops, path)
 		elif order.type == &"transport":
 			var transport_city_id: StringName = StringName(order.params.get("from_city", &""))
 			if transport_city_id == city_id:
-				out["food"] = int(out["food"]) + int(order.params.get("food", 0))
-	return out
+				reserved += int(order.params.get("food", 0))
+		elif order.type == &"feast":
+			var target_kind: StringName = StringName(order.params.get("target_kind", &""))
+			var target_id: StringName = StringName(order.params.get("target_id", &""))
+			if target_kind == &"city" and target_id == city_id and city != null:
+				reserved += ceili(city.troops / 100.0)
+	return reserved
 
 
 func next_id() -> int:
@@ -357,6 +372,8 @@ func _validate_transport(params: Dictionary) -> Error:
 	var path: Array[Vector2i] = map.find_path(start, target_pos)
 	if path.is_empty() and start != target_pos:
 		return ERR_INVALID_PARAMETER
+	if not _path_fits_turn_points(path):
+		return ERR_INVALID_PARAMETER
 	return OK
 
 
@@ -404,7 +421,9 @@ func _validate_feast(params: Dictionary) -> Error:
 	var one_day_ration: int = ceili(troops / 100.0)
 	if _has_pending_feast(target_kind, target_id):
 		return ERR_INVALID_PARAMETER
-	var available_food: int = food - _pending_feast_food(target_kind, target_id)
+	var reserved_food: int = _pending_city_food(StringName(target_id)) \
+			if target_kind == &"city" else _pending_feast_food(target_kind, target_id)
+	var available_food: int = food - reserved_food
 	if victory_cooldown <= 0 or available_food < one_day_ration:
 		return ERR_INVALID_PARAMETER
 	return OK

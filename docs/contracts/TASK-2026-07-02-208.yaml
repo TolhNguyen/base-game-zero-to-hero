@@ -1,0 +1,72 @@
+task_id: TASK-2026-07-02-208
+objective: >
+  Card War end-of-turn resolution converts armies into camps and moves food
+  convoys that deliver to camps or armies.
+context: >
+  Reconstructed card_war vertical-slice Task 208. Consume Tasks 204-207:
+  CwState order validation, CwCamp, CwConvoy, and CwResolver phases. Read and
+  obey AGENTS.md, CONSTITUTION.md, docs/governance/change-rules.md,
+  docs/governance/task-contract-template.md, and the current card_war sim APIs.
+inputs:
+  - Owner-approved TASK-2026-07-02-208 instructions in the executor prompt
+  - game/modules/card_war/sim/cw_resolver.gd from Tasks 205-207
+  - Existing CwState build_camp and transport validation from Task 204
+  - Existing CwCamp, CwConvoy, CwArmy, CwCity, CwTuning, and card_war GdUnit style
+expected_outputs:
+  - docs/contracts/TASK-2026-07-02-208.yaml records this task contract
+  - game/modules/card_war/sim/cw_resolver.gd processes and removes build_camp and transport start orders
+  - game/modules/card_war/sim/cw_resolver.gd converts eligible armies into camps and emits camp_built
+  - game/modules/card_war/sim/cw_resolver.gd creates food convoys, moves them after armies, delivers or loses food on arrival, and emits convoy_arrived
+  - game/tests/card_war/test_camp_convoy.gd covers camp conversion, convoy delivery to camp, and dead-target loss
+  - game/tests/card_war/test_march.gd no longer uses build_camp as a still-unhandled placeholder after Task 208 processes supported orders
+  - Generated game/tests/card_war/test_camp_convoy.gd.uid if Godot creates it
+  - Generated game/tests/card_war/test_march.gd.uid if Godot creates or updates it
+allowed_paths:
+  - docs/contracts/TASK-2026-07-02-208.yaml
+  - game/modules/card_war/sim/cw_resolver.gd
+  - game/tests/card_war/test_camp_convoy.gd
+  - game/tests/card_war/test_camp_convoy.gd.uid
+  - game/tests/card_war/test_march.gd
+  - game/tests/card_war/test_march.gd.uid
+forbidden_actions:
+  - editing files outside allowed_paths
+  - editing existing docs/contracts execution records
+  - editing game/core, tools/check*, tools/validate_*, docs/governance, existing ADRs/contracts, or .githooks
+  - implementing Task 209 content, builder, playthrough, or UI behavior
+  - changing public signatures of game/core/ or adding dependencies/plugins
+expected_outputs_verification: >
+  First create game/tests/card_war/test_camp_convoy.gd and run its focused
+  GdUnit suite before implementation, expecting failure because build_camp and
+  transport are still preserved or ignored. After implementation, run focused
+  test_camp_convoy.gd and expect PASS. Run focused earlier card_war suites
+  test_combat.gd, test_march.gd, test_supply_morale.gd, and test_orders.gd and
+  expect PASS. Then run rtk proxy C:\PROGRA~1\Git\bin\bash.exe
+  tools/check.sh --fast and expect CHECK: PASS.
+acceptance_criteria:
+  - _start_orders processes and removes march, gather_food, assault, feast, build_camp, and transport orders, with no supported order type intentionally preserved because it is unhandled
+  - build_camp defensively skips missing or returning armies without mutation
+  - build_camp converts an eligible army into a CwCamp at the army position, carrying troops, food, morale, and general_id
+  - build_camp sets footprint_tiles to ceili(troops / float(s.tuning.troops_per_camp_tile)), removes the army, keeps the general busy, emits camp_built, and the new camp consumes food later in the same resolve
+  - transport defensively skips missing source cities or missing targets without mutation
+  - transport deducts food from the source city at start, creates a CwConvoy at s.spawn_tile(city), records path from the city anchor to the target's start position, target_kind, target_id, and emits order_started for transport
+  - convoy movement runs after army movement using move_points_per_turn and s.map.move_cost(tile)
+  - convoy arrival delivers food into an existing camp or army target, loses food if the target no longer exists, emits convoy_arrived with delivered true or false, and erases the convoy
+  - convoys do not consume food during consumption
+  - Focused camp_convoy, combat, march, supply_morale, order tests, and tools/check.sh --fast pass
+required_evidence:
+  - failing focused GdUnit output from the RED test_camp_convoy.gd step
+  - passing focused GdUnit output for game/tests/card_war/test_camp_convoy.gd
+  - passing focused GdUnit output for game/tests/card_war/test_combat.gd
+  - passing focused GdUnit output for game/tests/card_war/test_march.gd
+  - passing focused GdUnit output for game/tests/card_war/test_supply_morale.gd
+  - passing focused GdUnit output for game/tests/card_war/test_orders.gd
+  - passing tools/check.sh --fast output summary
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change or dependency/plugin addition
+report_format: >
+  Reply with: Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT;
+  what was implemented; what was tested and exact results; commit SHA; files
+  changed; self-review findings; any concerns.

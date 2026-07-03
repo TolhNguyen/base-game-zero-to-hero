@@ -44,6 +44,10 @@ static func _start_orders(s: CwState, events: Array[Dictionary]) -> void:
 					army.assault_city = StringName(order.params.get("city", &""))
 			&"feast":
 				_start_feast(s, order, events)
+			&"build_camp":
+				_start_build_camp(s, order, events)
+			&"transport":
+				_start_transport(s, order, events)
 			_:
 				remaining.append(order)
 	s.pending = remaining
@@ -123,6 +127,69 @@ static func _start_feast(s: CwState, order: CwOrder, events: Array[Dictionary]) 
 		events.append({"t": &"feast_held", "kind": &"city", "id": city.id})
 
 
+static func _start_build_camp(s: CwState, order: CwOrder, events: Array[Dictionary]) -> void:
+	var army_id: int = int(order.params.get("army_id", 0))
+	var army: CwArmy = s.armies.get(army_id, null) as CwArmy
+	if army == null or army.state == &"returning":
+		return
+
+	var camp: CwCamp = CwCamp.new()
+	camp.id = s.next_id()
+	camp.pos = army.pos
+	camp.troops = army.troops
+	camp.food = army.food
+	camp.morale = army.morale
+	camp.general_id = army.general_id
+	camp.footprint_tiles = ceili(army.troops / float(s.tuning.troops_per_camp_tile))
+	s.camps[camp.id] = camp
+	s.armies.erase(army.id)
+	events.append({"t": &"camp_built", "id": camp.id, "pos": camp.pos,
+			"footprint": camp.footprint_tiles})
+
+
+static func _start_transport(s: CwState, order: CwOrder, events: Array[Dictionary]) -> void:
+	var from_city_id: StringName = StringName(order.params.get("from_city", &""))
+	var city: CwCity = s.cities.get(from_city_id, null) as CwCity
+	if city == null or city.owner_side != &"player":
+		return
+
+	var amount: int = int(order.params.get("food", 0))
+	if amount <= 0 or city.food < amount:
+		return
+
+	var target_kind: StringName = StringName(order.params.get("target_kind", &""))
+	var target_id: Variant = order.params.get("target_id", 0)
+	var target_pos: Vector2i = Vector2i.ZERO
+	if target_kind == &"camp":
+		var camp: CwCamp = s.camps.get(int(target_id), null) as CwCamp
+		if camp == null:
+			return
+		target_pos = camp.pos
+	elif target_kind == &"army":
+		var army: CwArmy = s.armies.get(int(target_id), null) as CwArmy
+		if army == null:
+			return
+		target_pos = army.pos
+	else:
+		return
+
+	var start: Vector2i = s.spawn_tile(city)
+	var path: Array[Vector2i] = s.map.find_path(start, target_pos)
+	if path.is_empty() and start != target_pos:
+		return
+
+	city.food -= amount
+	var convoy: CwConvoy = CwConvoy.new()
+	convoy.id = s.next_id()
+	convoy.food = amount
+	convoy.pos = start
+	convoy.path = path
+	convoy.target_kind = target_kind
+	convoy.target_id = target_id
+	s.convoys[convoy.id] = convoy
+	events.append({"t": &"order_started", "type": &"transport", "convoy": convoy.id})
+
+
 static func _movement(s: CwState, events: Array[Dictionary]) -> void:
 	var holding_ids: Array[int] = []
 	var moving_ids: Array[int] = []
@@ -138,6 +205,8 @@ static func _movement(s: CwState, events: Array[Dictionary]) -> void:
 		if a == null:
 			continue
 		_move_army(s, a, events)
+
+	_move_convoys(s, events)
 
 	for id: int in holding_ids:
 		var a: CwArmy = s.armies.get(id, null) as CwArmy
@@ -171,6 +240,43 @@ static func _move_army(s: CwState, a: CwArmy, events: Array[Dictionary]) -> void
 			events.append({"t": &"army_arrived", "id": a.id, "pos": a.pos})
 		elif a.state == &"returning":
 			_merge_returned_army(s, a, events)
+
+
+static func _move_convoys(s: CwState, events: Array[Dictionary]) -> void:
+	for value: Variant in s.convoys.values().duplicate():
+		var convoy: CwConvoy = value as CwConvoy
+		if convoy == null:
+			continue
+
+		var points_left: int = s.tuning.move_points_per_turn
+		while not convoy.path.is_empty():
+			var next: Vector2i = convoy.path[0]
+			var cost: int = s.map.move_cost(next)
+			if cost <= 0 or points_left < cost:
+				break
+			points_left -= cost
+			convoy.pos = next
+			convoy.path.remove_at(0)
+
+		if convoy.path.is_empty():
+			_deliver_convoy(s, convoy, events)
+
+
+static func _deliver_convoy(s: CwState, convoy: CwConvoy, events: Array[Dictionary]) -> void:
+	var delivered := false
+	if convoy.target_kind == &"camp":
+		var camp: CwCamp = s.camps.get(int(convoy.target_id), null) as CwCamp
+		if camp != null:
+			camp.food += convoy.food
+			delivered = true
+	elif convoy.target_kind == &"army":
+		var army: CwArmy = s.armies.get(int(convoy.target_id), null) as CwArmy
+		if army != null and army.pos == convoy.pos:
+			army.food += convoy.food
+			delivered = true
+
+	s.convoys.erase(convoy.id)
+	events.append({"t": &"convoy_arrived", "id": convoy.id, "delivered": delivered})
 
 
 static func _begin_return(s: CwState, a: CwArmy, events: Array[Dictionary]) -> void:

@@ -108,24 +108,16 @@ func test_pending_reservations_block_overdraw() -> void:
 
 func test_resolve_preserves_unhandled_pending_orders() -> void:
 	var s: CwState = _state()
-	s.register_card(&"card.build_camp", &"build_camp", 1)
-	s.hand.append(&"card.build_camp")
-	var camp_army: CwArmy = CwArmy.new()
-	camp_army.id = s.next_id()
-	camp_army.state = &"holding"
-	camp_army.pos = Vector2i(2, 0)
-	camp_army.home_city = &"city.home"
-	s.armies[camp_army.id] = camp_army
 	assert_int(_play_march(s, 2000, Vector2i(4, 0))).is_equal(OK)
-	assert_int(s.play_card(_order(&"card.build_camp", &"build_camp",
-			{"army_id": camp_army.id}))).is_equal(OK)
+	var future_order: CwOrder = _order(&"card.future", &"future_order", {})
+	s.pending.append(future_order)
 
 	ResolverScript.resolve(s)
 
-	assert_int(s.armies.size()).is_equal(2)
+	assert_int(s.armies.size()).is_equal(1)
 	assert_int(s.pending.size()).is_equal(1)
 	if s.pending.size() > 0:
-		assert_str(String(s.pending[0].type)).is_equal("build_camp")
+		assert_str(String(s.pending[0].type)).is_equal("future_order")
 
 
 func test_march_rejects_path_step_over_move_points_atomically() -> void:
