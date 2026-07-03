@@ -5,6 +5,8 @@ extends RefCounted
 ## 6 morale, 7 win/lose. Then turn++, energy regen, card draw.
 ## All mutations append an event record {"t": StringName, ...} for the UI.
 
+const CombatScript := preload("res://modules/card_war/sim/cw_combat.gd")
+
 
 static func resolve(s: CwState) -> Array[Dictionary]:
 	var events: Array[Dictionary] = []
@@ -30,11 +32,32 @@ static func resolve(s: CwState) -> Array[Dictionary]:
 static func _start_orders(s: CwState, events: Array[Dictionary]) -> void:
 	var remaining: Array[CwOrder] = []
 	for order: CwOrder in s.pending:
-		if order.type == &"march":
-			_start_march(s, order, events)
-		else:
-			remaining.append(order)
+		match order.type:
+			&"march":
+				_start_march(s, order, events)
+			&"gather_food":
+				_start_gather_food(s, order, events)
+			&"assault":
+				var army_id: int = int(order.params.get("army_id", 0))
+				var army: CwArmy = s.armies.get(army_id, null) as CwArmy
+				if army != null and army.assault_city == &"":
+					army.assault_city = StringName(order.params.get("city", &""))
+			&"feast":
+				_start_feast(s, order, events)
+			_:
+				remaining.append(order)
 	s.pending = remaining
+
+
+static func _start_gather_food(s: CwState, order: CwOrder, events: Array[Dictionary]) -> void:
+	var city_id: StringName = StringName(order.params.get("city", &""))
+	var city: CwCity = s.cities.get(city_id, null) as CwCity
+	if city == null:
+		return
+
+	var amount: int = city.production_per_day * 3
+	city.food += amount
+	events.append({"t": &"food_gathered", "city": city.id, "amount": amount})
 
 
 static func _start_march(s: CwState, order: CwOrder, events: Array[Dictionary]) -> void:
@@ -70,6 +93,34 @@ static func _start_march(s: CwState, order: CwOrder, events: Array[Dictionary]) 
 	s.armies[a.id] = a
 	s.set_general_busy(general_id, true)
 	events.append({"t": &"order_started", "type": &"march", "army": a.id})
+
+
+static func _start_feast(s: CwState, order: CwOrder, events: Array[Dictionary]) -> void:
+	var target_kind: StringName = StringName(order.params.get("target_kind", &""))
+	if target_kind == &"army":
+		var army_id: int = int(order.params.get("target_id", 0))
+		var army: CwArmy = s.armies.get(army_id, null) as CwArmy
+		if army == null:
+			return
+		var one_day_ration: int = ceili(army.troops / 100.0)
+		if army.victory_cooldown <= 0 or army.food < one_day_ration:
+			return
+		army.food = maxi(0, army.food - one_day_ration)
+		army.morale = minf(100.0, army.morale + s.tuning.feast_morale_gain)
+		army.victory_cooldown = 0
+		events.append({"t": &"feast_held", "kind": &"army", "id": army.id})
+	elif target_kind == &"city":
+		var city_id: StringName = StringName(order.params.get("target_id", &""))
+		var city: CwCity = s.cities.get(city_id, null) as CwCity
+		if city == null or city.owner_side != &"player":
+			return
+		var one_day_ration: int = ceili(city.troops / 100.0)
+		if city.victory_cooldown <= 0 or city.food < one_day_ration:
+			return
+		city.food = maxi(0, city.food - one_day_ration)
+		city.morale = minf(100.0, city.morale + s.tuning.feast_morale_gain)
+		city.victory_cooldown = 0
+		events.append({"t": &"feast_held", "kind": &"city", "id": city.id})
 
 
 static func _movement(s: CwState, events: Array[Dictionary]) -> void:
@@ -162,8 +213,57 @@ static func _lose_orphan_army(s: CwState, a: CwArmy, events: Array[Dictionary]) 
 	events.append({"t": &"army_lost", "id": a.id, "reason": &"home_missing"})
 
 
-static func _combat(_s: CwState, _events: Array[Dictionary]) -> void:
-	pass
+static func _combat(s: CwState, events: Array[Dictionary]) -> void:
+	for value: Variant in s.armies.values():
+		var army: CwArmy = value as CwArmy
+		if army.victory_cooldown > 0:
+			army.victory_cooldown -= 1
+	for value: Variant in s.cities.values():
+		var cooldown_city: CwCity = value as CwCity
+		if cooldown_city.victory_cooldown > 0:
+			cooldown_city.victory_cooldown -= 1
+
+	for value: Variant in s.armies.values().duplicate():
+		var army: CwArmy = value as CwArmy
+		if army.assault_city == &"":
+			continue
+		var target_city_id: StringName = army.assault_city
+		army.assault_city = &""
+
+		var city: CwCity = s.cities.get(target_city_id, null) as CwCity
+		if city == null or city.owner_side != &"enemy":
+			continue
+
+		var result: Dictionary = CombatScript.assault(army, city)
+		var att_losses: int = int(result["att_losses"])
+		var def_losses: int = int(result["def_losses"])
+		army.troops = maxi(0, army.troops - att_losses)
+		city.troops = maxi(0, city.troops - def_losses)
+
+		var captured: bool = bool(result["captured"])
+		if bool(result["won"]):
+			army.morale = minf(100.0, army.morale + s.tuning.victory_morale_gain)
+			city.morale = maxf(0.0, city.morale - s.tuning.defeat_morale_loss)
+			if city.troops <= 0 or city.morale <= 0.0:
+				captured = true
+		else:
+			army.morale = maxf(0.0, army.morale - s.tuning.defeat_morale_loss)
+
+		if captured:
+			city.owner_side = &"player"
+			city.troops = 0
+			city.morale = s.tuning.morale_start
+			city.victory_cooldown = 2
+			army.victory_cooldown = 2
+
+		army.hold_left = s.tuning.march_hold_turns
+		events.append({"t": &"assault", "army": army.id, "city": city.id,
+				"att_losses": att_losses, "def_losses": def_losses, "captured": captured})
+
+		if army.troops <= 0:
+			s.set_general_busy(army.general_id, false)
+			s.armies.erase(army.id)
+			events.append({"t": &"army_disbanded", "id": army.id})
 
 
 static func _production(s: CwState, _events: Array[Dictionary]) -> void:

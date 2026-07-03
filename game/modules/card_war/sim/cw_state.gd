@@ -365,6 +365,8 @@ func _validate_assault(params: Dictionary) -> Error:
 	var army: CwArmy = armies.get(army_id, null) as CwArmy
 	if army == null or army.state != &"holding":
 		return ERR_INVALID_PARAMETER
+	if _has_pending_assault(army_id):
+		return ERR_INVALID_PARAMETER
 
 	var city_id: StringName = StringName(params.get("city", &""))
 	var city: CwCity = _enemy_city(city_id)
@@ -400,9 +402,52 @@ func _validate_feast(params: Dictionary) -> Error:
 		return ERR_INVALID_PARAMETER
 
 	var one_day_ration: int = ceili(troops / 100.0)
-	if victory_cooldown <= 0 or food < one_day_ration:
+	if _has_pending_feast(target_kind, target_id):
+		return ERR_INVALID_PARAMETER
+	var available_food: int = food - _pending_feast_food(target_kind, target_id)
+	if victory_cooldown <= 0 or available_food < one_day_ration:
 		return ERR_INVALID_PARAMETER
 	return OK
+
+
+func _has_pending_assault(army_id: int) -> bool:
+	for order: CwOrder in pending:
+		if order.type == &"assault" and int(order.params.get("army_id", 0)) == army_id:
+			return true
+	return false
+
+
+func _has_pending_feast(target_kind: StringName, target_id: Variant) -> bool:
+	for order: CwOrder in pending:
+		if order.type == &"feast" and _same_feast_target(order, target_kind, target_id):
+			return true
+	return false
+
+
+func _pending_feast_food(target_kind: StringName, target_id: Variant) -> int:
+	var reserved := 0
+	for order: CwOrder in pending:
+		if not (order.type == &"feast" and _same_feast_target(order, target_kind, target_id)):
+			continue
+		if target_kind == &"army":
+			var army: CwArmy = armies.get(int(target_id), null) as CwArmy
+			if army != null:
+				reserved += ceili(army.troops / 100.0)
+		elif target_kind == &"city":
+			var city: CwCity = cities.get(StringName(target_id), null) as CwCity
+			if city != null:
+				reserved += ceili(city.troops / 100.0)
+	return reserved
+
+
+func _same_feast_target(order: CwOrder, target_kind: StringName, target_id: Variant) -> bool:
+	if StringName(order.params.get("target_kind", &"")) != target_kind:
+		return false
+	if target_kind == &"army":
+		return int(order.params.get("target_id", 0)) == int(target_id)
+	if target_kind == &"city":
+		return StringName(order.params.get("target_id", &"")) == StringName(target_id)
+	return false
 
 
 func _player_city(id: StringName) -> CwCity:

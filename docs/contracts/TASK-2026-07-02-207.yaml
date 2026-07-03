@@ -1,0 +1,78 @@
+task_id: TASK-2026-07-02-207
+objective: >
+  Card War end-of-turn resolution supports assault combat, gather-food orders,
+  and recent-victory feast orders.
+context: >
+  Reconstructed card_war vertical-slice Task 207. Consume Tasks 205-206
+  resolver behavior, Task 204 validation, CwArmy.assault_city, and
+  victory_cooldown. Read and obey AGENTS.md, CONSTITUTION.md,
+  docs/governance/change-rules.md, docs/governance/task-contract-template.md,
+  and the current card_war sim APIs.
+inputs:
+  - Owner-approved TASK-2026-07-02-207 instructions in the executor prompt
+  - Owner authorization to minimally update test_march.gd preservation coverage
+    from gather_food to still-unhandled Task 208 order types
+  - game/modules/card_war/sim/cw_resolver.gd from Tasks 205-206
+  - Existing CwState assault, gather_food, and feast validation from Task 204
+  - Existing CwArmy, CwCity, CwTuning, CwOrder, and card_war GdUnit style
+expected_outputs:
+  - docs/contracts/TASK-2026-07-02-207.yaml records this task contract
+  - game/modules/card_war/sim/cw_combat.gd exposes pure CwCombat.assault(army, city)
+  - game/modules/card_war/sim/cw_resolver.gd processes gather_food, assault, and feast start orders
+  - game/modules/card_war/sim/cw_resolver.gd resolves queued assaults, losses, capture, victory cooldowns, and disband
+  - game/tests/card_war/test_combat.gd covers assault formula, order wiring, gather food, and feast behavior
+  - game/tests/card_war/test_march.gd preserves unhandled build_camp or transport orders after Task 207
+  - Generated game/modules/card_war/sim/cw_combat.gd.uid, game/tests/card_war/test_combat.gd.uid, or game/tests/card_war/test_march.gd.uid if Godot creates or updates them
+allowed_paths:
+  - docs/contracts/TASK-2026-07-02-207.yaml
+  - game/modules/card_war/sim/cw_combat.gd
+  - game/modules/card_war/sim/cw_combat.gd.uid
+  - game/modules/card_war/sim/cw_resolver.gd
+  - game/tests/card_war/test_combat.gd
+  - game/tests/card_war/test_combat.gd.uid
+  - game/tests/card_war/test_march.gd
+  - game/tests/card_war/test_march.gd.uid
+forbidden_actions:
+  - editing files outside allowed_paths
+  - editing existing docs/contracts execution records
+  - editing game/core, tools/check*, tools/validate_*, docs/governance, existing ADRs/contracts, or .githooks
+  - implementing Task 208 build_camp, transport, or convoy behavior
+  - changing public signatures of game/core/ or adding dependencies/plugins
+expected_outputs_verification: >
+  First create game/tests/card_war/test_combat.gd and run its focused GdUnit
+  suite before implementation, expecting failure because CwCombat is missing
+  or incomplete. After implementation, run focused test_combat.gd and expect
+  PASS. Run focused test_march.gd, test_supply_morale.gd, and test_orders.gd
+  and expect PASS. Then run rtk proxy C:\PROGRA~1\Git\bin\bash.exe
+  tools/check.sh --fast and expect CHECK: PASS. Prefer a full tools/check.sh
+  PASS before commit because new Godot scripts may create uid files.
+acceptance_criteria:
+  - CwCombat.assault is pure and returns won, captured, att_losses, and def_losses using the specified provisional assault formula
+  - _start_orders processes and removes march, gather_food, assault, and feast orders
+  - _start_orders preserves still-unhandled build_camp and transport pending orders for Task 208
+  - gather_food adds production_per_day * 3 food to the player city and emits food_gathered with city and amount
+  - assault start orders set the target army assault_city, with actual combat resolved during _combat in the same resolve
+  - _combat decrements positive army and city victory_cooldown values by 1 before resolving assaults
+  - _combat safely resolves all armies with assault_city, clears assault_city, skips missing or non-enemy targets, applies losses, morale changes, hold reset, capture, victory cooldowns, and assault events
+  - captured cities become player-owned, have zero troops, reset morale to morale_start, and set both city and army victory_cooldown to 2
+  - armies reduced to zero troops free their general, are removed, and emit army_disbanded
+  - feast for army targets spends one one-day ration from carried food, boosts morale by feast_morale_gain capped at 100, clears victory_cooldown, and emits feast_held
+  - feast for city targets spends one one-day ration from city food, boosts morale by feast_morale_gain capped at 100, clears victory_cooldown, and emits feast_held
+  - Focused combat, march, supply_morale, order tests, and tools/check.sh --fast pass
+required_evidence:
+  - failing focused GdUnit output from the RED test_combat.gd step
+  - passing focused GdUnit output for game/tests/card_war/test_combat.gd
+  - passing focused GdUnit output for game/tests/card_war/test_march.gd
+  - passing focused GdUnit output for game/tests/card_war/test_supply_morale.gd
+  - passing focused GdUnit output for game/tests/card_war/test_orders.gd
+  - passing tools/check.sh --fast output summary
+  - passing full tools/check.sh output summary if full verification is not too slow
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change or dependency/plugin addition
+report_format: >
+  Reply with: Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT;
+  what was implemented; what was tested and exact results; commit SHA; files
+  changed; self-review findings; any concerns.
