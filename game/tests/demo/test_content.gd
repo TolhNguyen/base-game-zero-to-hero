@@ -8,14 +8,14 @@ const RegistryScript := preload("res://core/registry/registry.gd")
 func test_content_scans_without_errors() -> void:
 	var reg: Node = auto_free(RegistryScript.new())
 	assert_int(reg.scan("res://content")).is_equal(OK)
-	assert_int(reg.count()).is_equal(20)
+	assert_int(reg.count()).is_equal(21)
 
 
 func test_expected_ids_present() -> void:
 	var reg: Node = auto_free(RegistryScript.new())
 	reg.scan("res://content")
 	for id in [&"item.apple", &"dialogue.npc_greeting", &"quest.collect_apples",
-			&"scene.demo_room_a", &"scene.demo_room_b",
+			&"scene.demo_room_a", &"scene.demo_room_b", &"scene.card_war_battle",
 			&"card.march", &"card.gather_food", &"card.build_camp",
 			&"card.transport", &"card.assault", &"card.feast",
 			&"general.asun", &"terrain.plains", &"terrain.forest",
@@ -27,7 +27,7 @@ func test_expected_ids_present() -> void:
 func test_scene_defs_point_at_existing_scenes() -> void:
 	var reg: Node = auto_free(RegistryScript.new())
 	reg.scan("res://content")
-	for id in [&"scene.demo_room_a", &"scene.demo_room_b"]:
+	for id in [&"scene.demo_room_a", &"scene.demo_room_b", &"scene.card_war_battle"]:
 		var def: SceneDef = reg.get_def(id)
 		assert_bool(ResourceLoader.exists(def.scene_path))\
 			.override_failure_message("missing scene file: %s" % def.scene_path).is_true()

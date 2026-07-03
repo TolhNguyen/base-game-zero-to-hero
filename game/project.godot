@@ -14,7 +14,7 @@ config/icon="res://icon.svg"
 
 [app]
 
-start_scene_id="scene.demo_room_a"
+start_scene_id="scene.card_war_battle"
 
 [autoload]
 

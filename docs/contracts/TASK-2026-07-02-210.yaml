@@ -1,0 +1,78 @@
+# Task Contract - copy this file, fill every field. Executors: refuse tasks with empty fields.
+task_id: TASK-2026-07-02-210
+objective: >
+  Card War boots into a battle scene vertical slice with map rendering, HUD,
+  hand display, end-turn resolution reporting, and victory/defeat event wiring.
+context: >
+  Owner-approved reconstructed Task 210 from the Card War vertical-slice plan.
+  Read CONSTITUTION.md, docs/governance/change-rules.md,
+  docs/contracts/README.md, docs/governance/task-contract-template.md,
+  docs/skills/verify-with-tools-check.md, scene-flow domain notes, and existing
+  Card War sim/content/test patterns before editing.
+inputs:
+  - Existing Card War sim APIs: CwBuilder, CwResolver, CwState, CwMapGrid.
+  - Tutorial content ids: scenario.tutorial_01, map.tutorial_01, terrain.*, card.*, general.asun.
+  - Existing content registry and scene-flow conventions.
+expected_outputs:
+  - docs/contracts/TASK-2026-07-02-210.yaml records this task.
+  - game/tests/card_war/test_battle_scene.gd verifies state build and end-turn report behavior.
+  - game/modules/card_war/ui/cw_map_view.gd renders the Card War map and emits tile clicks.
+  - game/modules/card_war/ui/battle.gd builds scenario state, HUD, hand display, reports, and game-end events.
+  - game/modules/card_war/ui/battle.tscn defines the battle scene.
+  - game/content/scenes/card_war_battle.tres registers scene.card_war_battle.
+  - game/project.godot boots scene.card_war_battle through the existing boot flow.
+  - game/tests/demo/test_content.gd expects the new scene definition.
+allowed_paths:
+  - docs/contracts/TASK-2026-07-02-210.yaml
+  - game/modules/card_war/ui/cw_map_view.gd
+  - game/modules/card_war/ui/cw_map_view.gd.uid
+  - game/modules/card_war/ui/battle.gd
+  - game/modules/card_war/ui/battle.gd.uid
+  - game/modules/card_war/ui/battle.tscn
+  - game/content/scenes/card_war_battle.tres
+  - game/project.godot
+  - game/tests/demo/test_content.gd
+  - game/tests/card_war/test_battle_scene.gd
+  - game/tests/card_war/test_battle_scene.gd.uid
+forbidden_actions:
+  - editing files outside allowed_paths
+  - editing existing committed contracts
+  - editing Protected Core paths
+  - changing public signatures of game/core/ or Card War sim APIs
+  - adding dependencies, Godot plugins, or editor addons
+  - implementing Task 211 hand buttons or order targeting flow
+expected_outputs_verification: >
+  First run the focused battle scene suite after writing the test and before
+  implementation; expected RED because battle.tscn or battle scene behavior is
+  missing. After implementation, run the focused battle scene suite and
+  res://tests/demo/test_content.gd; expected PASS. Then run
+  rtk proxy C:\PROGRA~1\Git\bin\bash.exe tools/check.sh; expected CHECK: PASS.
+acceptance_criteria:
+  - The new battle scene test fails before production implementation for the expected missing scene or missing behavior reason.
+  - battle.gd exposes the exact Task 211 interface members listed in the task request.
+  - CwMapView exposes state, tile_clicked(tile: Vector2i), refresh(), and TILE := 40.
+  - battle.tscn instantiates a Battle Node2D with MapView and UI children.
+  - The battle scene builds tutorial state from Registry content with two cities, five cards in hand, and a 16x16 map.
+  - End turn calls CwResolver.resolve, advances turn, shows a non-empty report, refreshes the HUD, and disables end turn after game result.
+  - Victory and defeat publish card_war.victory or card_war.defeat with the current turn if EventBus exists.
+  - scene.card_war_battle is registered in content and project.godot boots through it.
+  - Focused battle and content tests pass.
+  - Full tools/check.sh passes, including boot smoke without SCRIPT ERROR.
+required_evidence:
+  - Focused battle scene RED command and failure summary.
+  - Focused battle scene PASS command and summary.
+  - Focused content PASS command and summary.
+  - Full tools/check.sh PASS summary.
+  - git status --short showing only intended task files before staging.
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change
+  - task requires changing Card War sim APIs
+  - focused or full verification fails for a reason outside allowed_paths
+report_format: >
+  Reply with: Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT;
+  what was implemented; verification commands and exact results including RED,
+  focused PASS, and full check PASS; commit SHA; files changed; self-review
+  findings; any concerns.
