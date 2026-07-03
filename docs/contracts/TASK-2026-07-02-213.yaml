@@ -1,0 +1,47 @@
+task_id: TASK-2026-07-02-213
+objective: >
+  Record the Task 205 post-review contract clarification without modifying the
+  immutable TASK-2026-07-02-205 execution record.
+root_cause: >
+  Task 205 quality review required preserving unhandled non-march pending orders
+  and adding a missing-home orphan-return policy after TASK-2026-07-02-205 had
+  already been committed; committed task contracts are immutable execution
+  records, so the original contract cannot be amended.
+context: >
+  Follow-up task required by docs/contracts/README.md and
+  docs/governance/protected-core.md: contract mistakes are fixed with a
+  follow-up task, never by editing committed contract history. This record
+  clarifies final behavior in commit c47b6bbb2635852a16e08d10aaf8c70a8ce173dd.
+inputs:
+  - docs/contracts/TASK-2026-07-02-205.yaml immutable execution record
+  - Task 205 quality review findings for pending-order preservation and orphan-return behavior
+  - Final Task 205 implementation at commit c47b6bbb2635852a16e08d10aaf8c70a8ce173dd
+expected_outputs:
+  - docs/contracts/TASK-2026-07-02-213.yaml records the Task 205 clarification as a follow-up execution record
+allowed_paths:
+  - docs/contracts/TASK-2026-07-02-213.yaml
+forbidden_actions:
+  - editing files outside allowed_paths
+  - editing existing docs/contracts execution records
+  - editing game/core, tools/check*, tools/validate_*, docs/governance, existing ADRs/contracts, or .githooks
+  - changing game behavior or adding dependencies/plugins
+expected_outputs_verification: >
+  Run rtk git diff --check and expect no whitespace errors. Run
+  rtk proxy C:\PROGRA~1\Git\bin\bash.exe tools/check.sh --fast and expect
+  CHECK: PASS.
+acceptance_criteria:
+  - this follow-up does not edit TASK-2026-07-02-205.yaml or any other committed contract
+  - Task 205 final behavior is clarified: start-orders removes processed march orders from pending while preserving unhandled non-march pending orders for later tasks
+  - Task 205 final behavior is clarified: when a returning army needs to begin return or merge but its home city is missing, the army is removed as lost, its general is freed, and an army_lost event with reason home_missing is recorded
+  - the obvious symptom patch of editing TASK-2026-07-02-205.yaml remains forbidden by contract immutability
+required_evidence:
+  - rtk git diff --check output
+  - tools/check.sh --fast output summary
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires editing an existing committed contract
+  - task requires touching paths outside allowed_paths
+report_format: >
+  Reply with: status, clarification recorded, evidence, commit SHA, and any
+  remaining review concerns.
