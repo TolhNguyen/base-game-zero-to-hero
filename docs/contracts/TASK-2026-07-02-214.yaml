@@ -1,0 +1,50 @@
+task_id: TASK-2026-07-02-214
+objective: >
+  Record the Task 207 post-review validation clarification without modifying
+  the immutable TASK-2026-07-02-207 execution record.
+root_cause: >
+  Task 207 quality review found duplicate assault/feast validation gaps and an
+  unclamped combat loss-reduction edge after TASK-2026-07-02-207 had already
+  been committed; fixing the validation correctly required CwState, but
+  committed task contracts are immutable and the original allowed_paths could
+  not be amended.
+context: >
+  Follow-up task required by docs/contracts/README.md and
+  docs/governance/protected-core.md: contract mistakes are fixed with a
+  follow-up task, never by editing committed contract history. This record
+  clarifies final behavior in commit c73c41adcadc9d81294eaec28a9c48a47dbd9c79.
+inputs:
+  - docs/contracts/TASK-2026-07-02-207.yaml immutable execution record
+  - Task 207 quality review findings for duplicate feast, duplicate assault, and unclamped loss reduction
+  - Final Task 207 implementation at commit c73c41adcadc9d81294eaec28a9c48a47dbd9c79
+expected_outputs:
+  - docs/contracts/TASK-2026-07-02-214.yaml records the Task 207 clarification as a follow-up execution record
+allowed_paths:
+  - docs/contracts/TASK-2026-07-02-214.yaml
+forbidden_actions:
+  - editing files outside allowed_paths
+  - editing existing docs/contracts execution records
+  - editing game/core, tools/check*, tools/validate_*, docs/governance, existing ADRs/contracts, or .githooks
+  - changing game behavior or adding dependencies/plugins
+expected_outputs_verification: >
+  Run rtk git diff --check and expect no whitespace errors. Run
+  rtk proxy C:\PROGRA~1\Git\bin\bash.exe tools/check.sh --fast and expect
+  CHECK: PASS.
+acceptance_criteria:
+  - this follow-up does not edit TASK-2026-07-02-207.yaml or any other committed contract
+  - Task 207 final behavior is clarified: CwState rejects duplicate pending assault orders for the same army atomically
+  - Task 207 final behavior is clarified: CwState rejects duplicate pending feast orders for the same army or city target atomically before a second food spend can be queued
+  - Task 207 final behavior is clarified: CwResolver defensively skips stale feast orders when the target, cooldown, or food stock is no longer valid
+  - Task 207 final behavior is clarified: CwCombat clamps loss reduction and returned losses so invalid content cannot create negative losses or increase troops
+  - the obvious symptom patch of editing TASK-2026-07-02-207.yaml remains forbidden by contract immutability
+required_evidence:
+  - rtk git diff --check output
+  - tools/check.sh --fast output summary
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires editing an existing committed contract
+  - task requires touching paths outside allowed_paths
+report_format: >
+  Reply with: status, clarification recorded, evidence, commit SHA, and any
+  remaining review concerns.
