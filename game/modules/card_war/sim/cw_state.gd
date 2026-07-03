@@ -119,6 +119,33 @@ func draw(n: int) -> Array[StringName]:
 	return drawn
 
 
+func play_card(order: CwOrder) -> Error:
+	if _validate_order(order) != OK:
+		return ERR_INVALID_PARAMETER
+
+	var queued: CwOrder = CwOrder.new()
+	queued.card_id = order.card_id
+	queued.type = order.type
+	queued.params = order.params.duplicate()
+
+	energy -= card_cost(order.card_id)
+	hand.erase(order.card_id)
+	discard.append(order.card_id)
+	pending.append(queued)
+	return OK
+
+
+func spawn_tile(city: CwCity) -> Vector2i:
+	return city.anchor()
+
+
+func march_food_needed(troops: int, path: Array[Vector2i]) -> int:
+	var go_turns: int = map.turns_for_path(path, tuning.move_points_per_turn)
+	var total_turns: int = go_turns + tuning.march_hold_turns + go_turns
+	var food_per_turn: int = ceili(troops / 100.0 * 3.0)
+	return food_per_turn * total_turns
+
+
 func next_id() -> int:
 	_next_id += 1
 	return _next_id - 1
@@ -191,3 +218,174 @@ func _shuffle(arr: Array[StringName]) -> void:
 		var tmp: StringName = arr[i]
 		arr[i] = arr[j]
 		arr[j] = tmp
+
+
+func _validate_order(order: CwOrder) -> Error:
+	if order == null:
+		return ERR_INVALID_PARAMETER
+	if result != &"":
+		return ERR_INVALID_PARAMETER
+	if not has_card(order.card_id):
+		return ERR_INVALID_PARAMETER
+	if not hand.has(order.card_id):
+		return ERR_INVALID_PARAMETER
+	if order.type != card_type(order.card_id):
+		return ERR_INVALID_PARAMETER
+	if energy < card_cost(order.card_id):
+		return ERR_INVALID_PARAMETER
+
+	match order.type:
+		&"march":
+			return _validate_march(order.params)
+		&"gather_food":
+			return _validate_gather_food(order.params)
+		&"build_camp":
+			return _validate_build_camp(order.params)
+		&"transport":
+			return _validate_transport(order.params)
+		&"assault":
+			return _validate_assault(order.params)
+		&"feast":
+			return _validate_feast(order.params)
+		_:
+			return ERR_INVALID_PARAMETER
+
+
+func _validate_march(params: Dictionary) -> Error:
+	var from_city_id: StringName = StringName(params.get("from_city", &""))
+	var city: CwCity = _player_city(from_city_id)
+	if city == null:
+		return ERR_INVALID_PARAMETER
+
+	var general_id: StringName = StringName(params.get("general_id", &""))
+	if not has_general(general_id) or is_general_busy(general_id):
+		return ERR_INVALID_PARAMETER
+
+	var troops: int = int(params.get("troops", 0))
+	if troops < 1 or troops > city.troops:
+		return ERR_INVALID_PARAMETER
+
+	var to: Vector2i = params.get("to", Vector2i.ZERO) as Vector2i
+	var path: Array[Vector2i] = map.find_path(spawn_tile(city), to)
+	if path.is_empty():
+		return ERR_INVALID_PARAMETER
+	if city.food < march_food_needed(troops, path):
+		return ERR_INVALID_PARAMETER
+	return OK
+
+
+func _validate_gather_food(params: Dictionary) -> Error:
+	var city_id: StringName = StringName(params.get("city", &""))
+	return OK if _player_city(city_id) != null else ERR_INVALID_PARAMETER
+
+
+func _validate_build_camp(params: Dictionary) -> Error:
+	var army_id: int = int(params.get("army_id", 0))
+	var army: CwArmy = armies.get(army_id, null) as CwArmy
+	if army == null or army.state == &"returning":
+		return ERR_INVALID_PARAMETER
+	return OK
+
+
+func _validate_transport(params: Dictionary) -> Error:
+	var from_city_id: StringName = StringName(params.get("from_city", &""))
+	var city: CwCity = _player_city(from_city_id)
+	if city == null:
+		return ERR_INVALID_PARAMETER
+
+	var food: int = int(params.get("food", 0))
+	if food < 1 or food > city.food:
+		return ERR_INVALID_PARAMETER
+
+	var target_kind: StringName = StringName(params.get("target_kind", &""))
+	if target_kind != &"camp" and target_kind != &"army":
+		return ERR_INVALID_PARAMETER
+
+	var found: bool = false
+	var target_pos: Vector2i = Vector2i.ZERO
+	var target_id: Variant = params.get("target_id", 0)
+	if target_kind == &"camp":
+		var camp: CwCamp = camps.get(int(target_id), null) as CwCamp
+		if camp != null:
+			found = true
+			target_pos = camp.pos
+	else:
+		var army: CwArmy = armies.get(int(target_id), null) as CwArmy
+		if army != null:
+			found = true
+			target_pos = army.pos
+	if not found:
+		return ERR_INVALID_PARAMETER
+
+	var start: Vector2i = spawn_tile(city)
+	var path: Array[Vector2i] = map.find_path(start, target_pos)
+	if path.is_empty() and start != target_pos:
+		return ERR_INVALID_PARAMETER
+	return OK
+
+
+func _validate_assault(params: Dictionary) -> Error:
+	var army_id: int = int(params.get("army_id", 0))
+	var army: CwArmy = armies.get(army_id, null) as CwArmy
+	if army == null or army.state != &"holding":
+		return ERR_INVALID_PARAMETER
+
+	var city_id: StringName = StringName(params.get("city", &""))
+	var city: CwCity = _enemy_city(city_id)
+	if city == null:
+		return ERR_INVALID_PARAMETER
+	if not _is_adjacent_to_city(army.pos, city):
+		return ERR_INVALID_PARAMETER
+	return OK
+
+
+func _validate_feast(params: Dictionary) -> Error:
+	var target_kind: StringName = StringName(params.get("target_kind", &""))
+	var target_id: Variant = params.get("target_id", 0)
+	var troops: int = 0
+	var food: int = 0
+	var victory_cooldown: int = 0
+
+	if target_kind == &"army":
+		var army: CwArmy = armies.get(int(target_id), null) as CwArmy
+		if army == null:
+			return ERR_INVALID_PARAMETER
+		troops = army.troops
+		food = army.food
+		victory_cooldown = army.victory_cooldown
+	elif target_kind == &"city":
+		var city: CwCity = _player_city(StringName(target_id))
+		if city == null:
+			return ERR_INVALID_PARAMETER
+		troops = city.troops
+		food = city.food
+		victory_cooldown = city.victory_cooldown
+	else:
+		return ERR_INVALID_PARAMETER
+
+	var one_day_ration: int = ceili(troops / 100.0)
+	if victory_cooldown <= 0 or food < one_day_ration:
+		return ERR_INVALID_PARAMETER
+	return OK
+
+
+func _player_city(id: StringName) -> CwCity:
+	var city: CwCity = cities.get(id, null) as CwCity
+	if city == null or city.owner_side != &"player":
+		return null
+	return city
+
+
+func _enemy_city(id: StringName) -> CwCity:
+	var city: CwCity = cities.get(id, null) as CwCity
+	if city == null or city.owner_side == &"player":
+		return null
+	return city
+
+
+func _is_adjacent_to_city(pos: Vector2i, city: CwCity) -> bool:
+	for tile: Vector2i in city.tiles:
+		var delta: Vector2i = tile - pos
+		if abs(delta.x) + abs(delta.y) == 1:
+			return true
+	return false

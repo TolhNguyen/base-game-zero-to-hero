@@ -1,0 +1,66 @@
+task_id: TASK-2026-07-02-204
+objective: >
+  Card War validates card orders at confirm time and queues accepted orders
+  atomically through CwState.play_card.
+context: >
+  Reconstructed card_war vertical-slice Task 204. Read and obey
+  CONSTITUTION.md, docs/governance/change-rules.md,
+  docs/governance/task-contract-template.md, docs/superpowers/specs/
+  2026-07-02-card-war-vertical-slice-design.md lines 112-124, and existing
+  game/modules/card_war/sim/*.
+inputs:
+  - Owner-approved TASK-2026-07-02-204 instructions in the executor prompt
+  - Existing CwState, CwOrder, CwMapGrid, CwTuning, CwCity, CwArmy, and CwCamp sim classes
+  - Existing card_war GdUnit style in game/tests/card_war/test_state_deck.gd
+expected_outputs:
+  - game/modules/card_war/sim/cw_state.gd exposes play_card(order), spawn_tile(city), and march_food_needed(troops, path)
+  - game/modules/card_war/sim/cw_state.gd validates supported order types before mutating state
+  - game/modules/card_war/sim/cw_state.gd atomically deducts energy, removes one card from hand, appends discard, and queues a copied CwOrder on success
+  - game/tests/card_war/test_orders.gd covers successful queuing, atomic rejection, march food, transport/build-camp, assault, and feast validation
+  - Generated game/tests/card_war/test_orders.gd.uid if Godot creates it
+allowed_paths:
+  - game/modules/card_war/sim/cw_state.gd
+  - game/tests/card_war/test_orders.gd
+  - docs/contracts/TASK-2026-07-02-204.yaml
+  - game/tests/card_war/test_orders.gd.uid
+forbidden_actions:
+  - editing files outside allowed_paths
+  - editing existing docs/contracts execution records
+  - editing game/core, tools/check*, tools/validate_*, docs/governance, existing docs/contracts, or .githooks
+  - implementing resolver behavior, combat, supply, camps, content, or UI
+  - changing public signatures of game/core/ (Core-level; escalate)
+  - adding dependencies or plugins
+expected_outputs_verification: >
+  First run the focused GdUnit suite for game/tests/card_war/test_orders.gd
+  before implementation and observe failure because CwState.play_card and
+  helper methods are missing. After implementation, run the focused suite and
+  expect PASS. Re-run game/tests/card_war/test_state_deck.gd and expect PASS.
+  Then run rtk proxy C:\PROGRA~1\Git\bin\bash.exe tools/check.sh --fast and
+  expect PASS.
+acceptance_criteria:
+  - play_card rejects invalid orders with ERR_INVALID_PARAMETER and leaves energy, hand, discard, and pending unchanged
+  - play_card accepts valid orders with OK, deducts card energy cost, removes one copy from hand, appends card to discard, and appends a copied pending order with duplicated params
+  - common validation checks result is empty, card is registered and present in hand, order type matches card type, and energy is sufficient
+  - march validation checks player source city, registered free general, troop bounds, reachable passable destination, and sufficient city march food
+  - gather_food validation checks the city exists and belongs to the player
+  - build_camp validation checks the army exists and is not returning
+  - transport validation checks player source city, food amount bounds, target kind camp or army, target existence, and reachability from source spawn tile
+  - assault validation checks holding army, enemy city, and orthogonal adjacency to at least one enemy city tile
+  - feast validation checks player city or army target, recent victory cooldown, and one-day ration in that target's own food stock
+  - spawn_tile returns city.anchor()
+  - march_food_needed uses go turns plus hold plus return turns and ceili(troops / 100.0 * 3.0) food per turn
+  - Focused order tests, prior state-deck tests, and tools/check.sh --fast pass
+required_evidence:
+  - failing focused GdUnit output from the RED step
+  - passing focused GdUnit output after implementation
+  - passing prior test_state_deck.gd output
+  - passing tools/check.sh --fast output summary
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change
+report_format: >
+  Reply with: Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT;
+  what was implemented; what was tested and exact results; commit SHA; files
+  changed; self-review findings; any concerns.
