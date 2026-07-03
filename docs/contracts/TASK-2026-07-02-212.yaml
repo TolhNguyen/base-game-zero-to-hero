@@ -1,0 +1,53 @@
+# Task Contract - copy this file, fill every field. Executors: refuse tasks with empty fields.
+task_id: TASK-2026-07-02-212
+objective: >
+  Card War has a concise domain memory record for the completed Tutorial
+  Mission 1 vertical slice, with final verification and human play gate
+  handoff.
+context: >
+  Final task from docs/superpowers/plans/2026-07-02-card-war-vertical-slice.md.
+  The implementation tasks are complete through TASK-2026-07-02-211. This task
+  documents the domain invariants and runs the final repository verification;
+  the human owner performs the manual play gate.
+inputs:
+  - docs/superpowers/plans/2026-07-02-card-war-vertical-slice.md Task 12
+  - docs/superpowers/specs/2026-07-02-card-war-vertical-slice-design.md
+  - Existing Card War implementation under game/modules/card_war/
+  - Existing content under game/content/cards, generals, terrains, maps, scenarios, and scenes
+expected_outputs:
+  - docs/contracts/TASK-2026-07-02-212.yaml records this final documentation task
+  - docs/memory/domains/card_war.md records domain intent, invariants, and gotchas
+  - Full tools/check.sh passes after the documentation change
+  - Owner receives the human play gate instructions for Mission 1
+allowed_paths:
+  - docs/contracts/TASK-2026-07-02-212.yaml
+  - docs/memory/domains/card_war.md
+forbidden_actions:
+  - editing files outside allowed_paths
+  - editing existing committed contracts
+  - editing Protected Core paths
+  - changing game behavior, content, tests, tools, or governance
+  - claiming the human play gate has passed
+expected_outputs_verification: >
+  Run rtk proxy C:\PROGRA~1\Git\bin\bash.exe tools/check.sh and expect
+  CHECK: PASS, all tests green, and boot smoke OK.
+acceptance_criteria:
+  - The new domain doc follows docs/memory/domains/README.md with Owner role and Last verified header lines.
+  - The domain doc captures Card War sim purity, mutation boundaries, food formula, ids, terrain letters, EventBus topics, resolver events, and implementation gotchas.
+  - No existing committed contract is edited.
+  - Full tools/check.sh passes after adding the doc.
+  - The final report asks the owner to perform the manual play gate instead of claiming it.
+required_evidence:
+  - git status --short --untracked-files=all showing only intended docs before staging
+  - tools/check.sh output summary with CHECK: PASS
+  - git status --short --untracked-files=all clean after commit
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change
+  - full verification fails for a reason outside allowed_paths
+report_format: >
+  Reply with: Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT;
+  what changed; verification commands and exact results; commit SHA; files
+  changed; human play gate instructions.
