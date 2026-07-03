@@ -64,7 +64,7 @@ func test_full_march_lifecycle() -> void:
 
 	var ev: Array[Dictionary] = ResolverScript.resolve(s)
 	assert_int(home.troops).is_equal(3000)
-	assert_int(home.food).is_equal(1640)
+	assert_int(home.food).is_equal(1670)
 	assert_int(s.armies.size()).is_equal(1)
 	var a: CwArmy = s.armies.values()[0]
 	assert_that(a.pos).is_equal(Vector2i(3, 0))

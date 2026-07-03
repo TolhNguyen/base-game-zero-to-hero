@@ -1,0 +1,69 @@
+task_id: TASK-2026-07-02-206
+objective: >
+  Card War end-of-turn resolution applies food production, food consumption,
+  starvation morale loss, and morale-collapse outcomes for cities, armies, and
+  camps.
+context: >
+  Reconstructed card_war vertical-slice Task 206. Consume the Task 205 resolver
+  skeleton and preserve its march lifecycle, unhandled pending-order
+  preservation, orphan-return loss behavior, and endcheck semantics. Read and
+  obey AGENTS.md, CONSTITUTION.md, docs/governance/change-rules.md, and the
+  current card_war sim APIs.
+inputs:
+  - Owner-approved TASK-2026-07-02-206 instructions in the executor prompt
+  - game/modules/card_war/sim/cw_resolver.gd with Task 205 private phase stubs
+  - Existing CwCity, CwArmy, CwCamp, CwState, and CwTuning food and morale APIs
+  - Existing card_war GdUnit style in game/tests/card_war/test_march.gd and test_orders.gd
+expected_outputs:
+  - docs/contracts/TASK-2026-07-02-206.yaml records this task contract
+  - game/modules/card_war/sim/cw_resolver.gd implements _production, _consumption, and _morale
+  - game/tests/card_war/test_supply_morale.gd covers production, consumption, starvation, morale loss, city surrender, army disband, and camp loss
+  - game/tests/card_war/test_march.gd updates the first-turn food expectation affected by production and consumption
+  - Generated game/tests/card_war/test_supply_morale.gd.uid or game/tests/card_war/test_march.gd.uid if Godot creates or updates them
+allowed_paths:
+  - docs/contracts/TASK-2026-07-02-206.yaml
+  - game/modules/card_war/sim/cw_resolver.gd
+  - game/tests/card_war/test_supply_morale.gd
+  - game/tests/card_war/test_supply_morale.gd.uid
+  - game/tests/card_war/test_march.gd
+  - game/tests/card_war/test_march.gd.uid
+forbidden_actions:
+  - editing files outside allowed_paths
+  - editing existing docs/contracts execution records, including TASK-2026-07-02-205.yaml and TASK-2026-07-02-213.yaml
+  - editing game/core, tools/check*, tools/validate_*, docs/governance, existing ADRs/contracts, or .githooks
+  - implementing assault, gather, feast, camp, convoy, or UI behavior beyond this task
+  - changing public signatures of game/core/ or adding dependencies/plugins
+expected_outputs_verification: >
+  First create game/tests/card_war/test_supply_morale.gd and run its focused
+  GdUnit suite before implementation, expecting failure because production,
+  consumption, and morale are no-op stubs. After implementation, run focused
+  test_supply_morale.gd and expect PASS. Run focused test_march.gd after the
+  food expectation update and expect PASS. Run focused test_orders.gd and
+  expect PASS. Then run rtk proxy C:\PROGRA~1\Git\bin\bash.exe
+  tools/check.sh --fast and expect CHECK: PASS.
+acceptance_criteria:
+  - every city, player and enemy, gains production_per_day * 3 food each resolve before consumption
+  - every city, camp, and army consumes food_per_turn() from local stock or carried food each resolve
+  - entities with sufficient food subtract the need and have starving set false
+  - entities with insufficient food set food to 0, have starving set true, and emit a starving event with kind and id
+  - each starving city, camp, and army loses s.tuning.starve_morale_loss morale, floored at 0
+  - an army at 0 morale is removed, its general is freed, and army_disbanded is emitted
+  - a camp at 0 morale is removed, its general is freed, and camp_lost is emitted
+  - a city at 0 morale flips owner_side to the other side, resets morale to morale_start, clears starving, and emits city_surrendered with the target side
+  - Task 205 non-march pending order preservation and orphan-return army_lost/home_missing behavior do not regress
+  - Focused supply/morale tests, focused march tests, focused order tests, and tools/check.sh --fast pass
+required_evidence:
+  - failing focused GdUnit output from the RED test_supply_morale.gd step
+  - passing focused GdUnit output for game/tests/card_war/test_supply_morale.gd
+  - passing focused GdUnit output for game/tests/card_war/test_march.gd
+  - passing focused GdUnit output for game/tests/card_war/test_orders.gd
+  - passing tools/check.sh --fast output summary
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change or dependency/plugin addition
+report_format: >
+  Reply with: Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT;
+  what was implemented; what was tested and exact results; commit SHA; files
+  changed; self-review findings; any concerns.

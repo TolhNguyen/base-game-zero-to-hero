@@ -166,16 +166,69 @@ static func _combat(_s: CwState, _events: Array[Dictionary]) -> void:
 	pass
 
 
-static func _production(_s: CwState, _events: Array[Dictionary]) -> void:
-	pass
+static func _production(s: CwState, _events: Array[Dictionary]) -> void:
+	for value: Variant in s.cities.values():
+		var c: CwCity = value as CwCity
+		c.food += c.production_per_day * 3
 
 
-static func _consumption(_s: CwState, _events: Array[Dictionary]) -> void:
-	pass
+static func _consumption(s: CwState, events: Array[Dictionary]) -> void:
+	for value: Variant in s.cities.values():
+		var c: CwCity = value as CwCity
+		c.starving = _consume(c, events, &"city", c.id)
+	for value: Variant in s.camps.values():
+		var camp: CwCamp = value as CwCamp
+		camp.starving = _consume(camp, events, &"camp", camp.id)
+	for value: Variant in s.armies.values():
+		var a: CwArmy = value as CwArmy
+		a.starving = _consume(a, events, &"army", a.id)
 
 
-static func _morale(_s: CwState, _events: Array[Dictionary]) -> void:
-	pass
+static func _consume(entity: RefCounted, events: Array[Dictionary],
+		kind: StringName, id: Variant) -> bool:
+	var need: int = int(entity.call(&"food_per_turn"))
+	var stock: int = int(entity.get(&"food"))
+	if stock >= need:
+		entity.set(&"food", stock - need)
+		return false
+
+	entity.set(&"food", 0)
+	events.append({"t": &"starving", "kind": kind, "id": id})
+	return true
+
+
+static func _morale(s: CwState, events: Array[Dictionary]) -> void:
+	for value: Variant in s.cities.values():
+		var c: CwCity = value as CwCity
+		if not c.starving:
+			continue
+		c.morale = maxf(c.morale - s.tuning.starve_morale_loss, 0.0)
+		if c.morale <= 0.0:
+			var to: StringName = &"enemy" if c.owner_side == &"player" else &"player"
+			c.owner_side = to
+			c.morale = s.tuning.morale_start
+			c.starving = false
+			events.append({"t": &"city_surrendered", "id": c.id, "to": to})
+
+	for value: Variant in s.armies.values().duplicate():
+		var a: CwArmy = value as CwArmy
+		if not a.starving:
+			continue
+		a.morale = maxf(a.morale - s.tuning.starve_morale_loss, 0.0)
+		if a.morale <= 0.0:
+			s.set_general_busy(a.general_id, false)
+			s.armies.erase(a.id)
+			events.append({"t": &"army_disbanded", "id": a.id})
+
+	for value: Variant in s.camps.values().duplicate():
+		var camp: CwCamp = value as CwCamp
+		if not camp.starving:
+			continue
+		camp.morale = maxf(camp.morale - s.tuning.starve_morale_loss, 0.0)
+		if camp.morale <= 0.0:
+			s.set_general_busy(camp.general_id, false)
+			s.camps.erase(camp.id)
+			events.append({"t": &"camp_lost", "id": camp.id})
 
 
 static func _endcheck(s: CwState, events: Array[Dictionary]) -> void:
