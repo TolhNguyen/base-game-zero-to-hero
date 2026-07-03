@@ -1,0 +1,73 @@
+task_id: TASK-2026-07-02-205
+objective: >
+  Card War end-of-turn resolution starts pending march orders, advances army
+  movement, handles march hold/return lifecycle, and evaluates win/loss.
+context: >
+  Reconstructed card_war vertical-slice Task 205. Read and obey
+  CONSTITUTION.md, docs/governance/change-rules.md,
+  docs/governance/task-contract-template.md, and current
+  game/modules/card_war/sim/* APIs from Tasks 202-204.
+inputs:
+  - Owner-approved TASK-2026-07-02-205 instructions in the executor prompt
+  - Existing CwState.play_card pending order queue and validation helpers
+  - Existing CwArmy, CwMapGrid, CwTuning, CwOrder, CwCity, and CwCamp sim classes
+  - Existing card_war GdUnit style in game/tests/card_war/test_orders.gd
+expected_outputs:
+  - game/modules/card_war/sim/cw_resolver.gd exposes CwResolver.resolve(s: CwState) -> Array[Dictionary]
+  - game/modules/card_war/sim/cw_resolver.gd runs fixed end-of-turn phases and appends UI event dictionaries
+  - game/modules/card_war/sim/cw_resolver.gd starts march orders, moves marching and returning armies, holds, returns, merges, and frees generals
+  - game/modules/card_war/sim/cw_resolver.gd implements victory/defeat endcheck and turn/energy/draw end-of-turn advancement
+  - game/modules/card_war/sim/cw_state.gd reserves pending march/transport troops, food, and generals during validation
+  - game/tests/card_war/test_march.gd covers march lifecycle, pending reservation overdraw, turn limit defeat, and no-op after result
+  - Generated game/tests/card_war/test_march.gd.uid or game/modules/card_war/sim/cw_resolver.gd.uid if Godot creates them
+allowed_paths:
+  - docs/contracts/TASK-2026-07-02-205.yaml
+  - game/modules/card_war/sim/cw_resolver.gd
+  - game/modules/card_war/sim/cw_resolver.gd.uid
+  - game/modules/card_war/sim/cw_state.gd
+  - game/tests/card_war/test_march.gd
+  - game/tests/card_war/test_march.gd.uid
+forbidden_actions:
+  - editing files outside allowed_paths
+  - editing existing docs/contracts execution records
+  - editing game/core, tools/check*, tools/validate_*, docs/governance, existing ADRs/contracts, or .githooks
+  - implementing combat, production, consumption, morale, assault, camp, convoy, or UI behavior beyond private stubs required by this task
+  - changing public signatures of game/core/ or adding dependencies/plugins
+expected_outputs_verification: >
+  First create game/tests/card_war/test_march.gd and run the focused GdUnit
+  suite before implementation, expecting failure because CwResolver is missing
+  or incomplete. After implementation, run the focused test_march.gd suite and
+  expect PASS. Run the focused test_orders.gd suite and expect PASS. Then run
+  rtk proxy C:\PROGRA~1\Git\bin\bash.exe tools/check.sh --fast and expect
+  CHECK: PASS.
+acceptance_criteria:
+  - resolve returns [] and mutates nothing when s.result is already set
+  - resolve phases run in order: start orders, movement, combat, production, consumption, morale, endcheck
+  - combat, production, consumption, and morale phases are private no-op stubs in this task
+  - after endcheck without result, resolve increments turn, regenerates energy up to max, draws per-turn cards, and appends turn_ended
+  - if endcheck sets result, resolve does not increment turn, regenerate energy, or draw cards, but still appends turn_ended
+  - starting a pending march spawns a CwArmy with correct fields, deducts source city troops and march food, marks the general busy, records order_started, and clears pending
+  - marching and returning armies move by move_points_per_turn using map.move_cost(tile), recording army_moved events
+  - a marching army whose path is exhausted becomes holding, resets hold_left, and records army_arrived
+  - holding armies without assault_city count down each resolve and begin returning when hold_left reaches zero
+  - begin return finds a path to home spawn, keeps holding with hold_left 1 if no path, or merges immediately if already home
+  - returning armies merge into home city when their return path is exhausted, restore troops and leftover food, free the general, erase the army, and record army_returned
+  - victory is set when no enemy city remains; defeat is set when no player city remains, total player troops are zero or less, or turn reaches the turn limit
+  - total player troops for defeat includes player cities, armies, and camps
+  - pending march validation subtracts previously pending troops and march food and rejects a pending double-booked general
+  - pending transport validation subtracts previously pending food
+  - Focused march tests, focused order tests, and tools/check.sh --fast pass
+required_evidence:
+  - failing focused GdUnit output from the RED test_march.gd step
+  - passing focused GdUnit output for game/tests/card_war/test_march.gd
+  - passing focused GdUnit output for game/tests/card_war/test_orders.gd
+  - passing tools/check.sh --fast output summary
+iteration_limit: 3
+escalation_conditions:
+  - acceptance criteria unreachable within iteration_limit
+  - task requires touching paths outside allowed_paths
+  - task requires a Core-level change or dependency/plugin addition
+report_format: >
+  Reply with: Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT;
+  what was implemented; what was tested and exact results; commit SHA; files
+  changed; self-review findings; any concerns.

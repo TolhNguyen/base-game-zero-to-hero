@@ -146,6 +146,33 @@ func march_food_needed(troops: int, path: Array[Vector2i]) -> int:
 	return food_per_turn * total_turns
 
 
+## Troops/food/generals already committed by not-yet-resolved orders.
+func _pending_reserves(city_id: StringName) -> Dictionary:
+	var out := {"troops": 0, "food": 0, "generals": []}
+	for order: CwOrder in pending:
+		if order.type == &"march":
+			var general_id: StringName = StringName(order.params.get("general_id", &""))
+			if general_id != &"" and not out["generals"].has(general_id):
+				out["generals"].append(general_id)
+
+			var march_city_id: StringName = StringName(order.params.get("from_city", &""))
+			if march_city_id != city_id:
+				continue
+
+			var troops: int = int(order.params.get("troops", 0))
+			out["troops"] = int(out["troops"]) + troops
+			var city: CwCity = cities.get(city_id, null) as CwCity
+			if city != null:
+				var to: Vector2i = order.params.get("to", Vector2i.ZERO) as Vector2i
+				var path: Array[Vector2i] = map.find_path(spawn_tile(city), to)
+				out["food"] = int(out["food"]) + march_food_needed(troops, path)
+		elif order.type == &"transport":
+			var transport_city_id: StringName = StringName(order.params.get("from_city", &""))
+			if transport_city_id == city_id:
+				out["food"] = int(out["food"]) + int(order.params.get("food", 0))
+	return out
+
+
 func next_id() -> int:
 	_next_id += 1
 	return _next_id - 1
@@ -258,18 +285,25 @@ func _validate_march(params: Dictionary) -> Error:
 		return ERR_INVALID_PARAMETER
 
 	var general_id: StringName = StringName(params.get("general_id", &""))
+	var reserves: Dictionary = _pending_reserves(from_city_id)
+	if reserves["generals"].has(general_id):
+		return ERR_INVALID_PARAMETER
 	if not has_general(general_id) or is_general_busy(general_id):
 		return ERR_INVALID_PARAMETER
 
 	var troops: int = int(params.get("troops", 0))
-	if troops < 1 or troops > city.troops:
+	var available_troops: int = city.troops - int(reserves["troops"])
+	if troops < 1 or troops > available_troops:
 		return ERR_INVALID_PARAMETER
 
 	var to: Vector2i = params.get("to", Vector2i.ZERO) as Vector2i
 	var path: Array[Vector2i] = map.find_path(spawn_tile(city), to)
 	if path.is_empty():
 		return ERR_INVALID_PARAMETER
-	if city.food < march_food_needed(troops, path):
+	if not _path_fits_turn_points(path):
+		return ERR_INVALID_PARAMETER
+	var available_food: int = city.food - int(reserves["food"])
+	if available_food < march_food_needed(troops, path):
 		return ERR_INVALID_PARAMETER
 	return OK
 
@@ -294,7 +328,9 @@ func _validate_transport(params: Dictionary) -> Error:
 		return ERR_INVALID_PARAMETER
 
 	var food: int = int(params.get("food", 0))
-	if food < 1 or food > city.food:
+	var reserves: Dictionary = _pending_reserves(from_city_id)
+	var available_food: int = city.food - int(reserves["food"])
+	if food < 1 or food > available_food:
 		return ERR_INVALID_PARAMETER
 
 	var target_kind: StringName = StringName(params.get("target_kind", &""))
@@ -389,3 +425,10 @@ func _is_adjacent_to_city(pos: Vector2i, city: CwCity) -> bool:
 		if abs(delta.x) + abs(delta.y) == 1:
 			return true
 	return false
+
+
+func _path_fits_turn_points(path: Array[Vector2i]) -> bool:
+	for tile: Vector2i in path:
+		if map.move_cost(tile) > tuning.move_points_per_turn:
+			return false
+	return true
