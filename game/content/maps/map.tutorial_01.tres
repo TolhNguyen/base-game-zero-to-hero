@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="CwMapDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://modules/card_war/sim/cw_map_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"map.tutorial_01"
+rows = PackedStringArray("MMMMMMMMMMMMMMMM", "MPPPPPPPPPPPPPPM", "MPPPPPPPEPPPPPPM", "MPPPPFFPPPFFPPPM", "MPPPPFFPPPFFPPPM", "MPPPPPPPPPPPPPPM", "MPPPPPPPPPPPPPPM", "MPPPPPPPPPPPPPPM", "MRRRRRPRRRRRRPRM", "MPPPPPPPPPPPPPPM", "MPPPPPPPPPPPPPPM", "MPPPFFPPPPPFFPPM", "MPPPFFPPPPPFFPPM", "MPPPPPPHHPPPPPPM", "MPPPPPPHHPPPPPPM", "MMMMMMMMMMMMMMMM")

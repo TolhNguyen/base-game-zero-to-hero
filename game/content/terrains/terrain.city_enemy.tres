@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="CwTerrainDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://modules/card_war/sim/cw_terrain_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"terrain.city_enemy"
+display_name = "City ground (enemy)"
+letter = "E"
+move_cost = 2
