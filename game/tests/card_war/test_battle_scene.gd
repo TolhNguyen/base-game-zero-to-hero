@@ -105,6 +105,33 @@ func test_battle_scene_uses_vietnamese_hud_and_report_text() -> void:
 	remove_child(battle)
 
 
+func test_presentation_layout_has_named_regions() -> void:
+	var scene: PackedScene = load("res://modules/card_war/ui/battle.tscn")
+	var battle: Node2D = auto_free(scene.instantiate())
+	add_child(battle)
+	assert_object(battle.get_node_or_null("UI/Root")).is_not_null()
+	assert_object(battle.get_node_or_null("UI/Root/MainRow")).is_not_null()
+	assert_object(battle.get_node_or_null("UI/Root/HandBar")).is_not_null()
+	assert_object(battle.get_node_or_null("UI/Root/MainRow/ContextPanel")).is_not_null()
+	remove_child(battle)
+
+
+func test_hand_entries_render_as_cards_with_description_and_cost() -> void:
+	var scene: PackedScene = load("res://modules/card_war/ui/battle.tscn")
+	var battle: Node2D = auto_free(scene.instantiate())
+	add_child(battle)
+	var s: CwState = battle.state
+	s.hand.clear()
+	s.hand.append(&"card.march")
+	battle._refresh()
+	var first: Control = battle._hand_box.get_child(0) as Control
+	assert_object(first).is_not_null()
+	assert_bool(first.name.begins_with("Card_")).is_true()
+	assert_bool(first.get_node("Button").text.contains("Hành Quân")).is_true()
+	assert_bool(first.get_node("Description").text.contains("Điều một đạo quân")).is_true()
+	remove_child(battle)
+
+
 func test_end_turn_publishes_victory_and_disables_button() -> void:
 	var bus: Node = get_node("/root/EventBus")
 	var published: Array[Dictionary] = []

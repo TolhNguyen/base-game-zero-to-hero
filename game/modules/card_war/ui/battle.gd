@@ -12,7 +12,7 @@ var _troops_spin: SpinBox
 var _food_spin: SpinBox
 var _confirm_btn: Button
 var _end_turn_btn: Button
-var _hand_box: VBoxContainer
+var _hand_box: HBoxContainer
 var _report_panel: PanelContainer
 var _report_text: RichTextLabel
 var _result_label: Label
@@ -116,28 +116,47 @@ func _build_state(registry: Node) -> CwState:
 
 func _build_ui() -> void:
 	var layer: CanvasLayer = $UI
-	var panel := PanelContainer.new()
-	panel.position = Vector2(680, 16)
-	panel.custom_minimum_size = Vector2(580, 688)
-	layer.add_child(panel)
 
 	var root := VBoxContainer.new()
-	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_child(root)
+	root.name = "Root"
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(root)
 
 	_hud_label = Label.new()
+	_hud_label.name = "Hud"
 	root.add_child(_hud_label)
+
+	var main_row := HBoxContainer.new()
+	main_row.name = "MainRow"
+	main_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(main_row)
+
+	var map_spacer := Control.new()
+	map_spacer.name = "MapSpace"
+	map_spacer.custom_minimum_size = Vector2(660, 650)
+	map_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	main_row.add_child(map_spacer)
+
+	var panel := PanelContainer.new()
+	panel.name = "ContextPanel"
+	panel.custom_minimum_size = Vector2(430, 0)
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	main_row.add_child(panel)
+
+	var context := VBoxContainer.new()
+	context.name = "ContextBox"
+	panel.add_child(context)
 
 	_status_label = Label.new()
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_status_label.custom_minimum_size = Vector2(0, 90)
-	root.add_child(_status_label)
+	context.add_child(_status_label)
 
 	_order_info = Label.new()
 	_order_info.text = "Chọn một lá bài hoặc một đơn vị."
 	_order_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	root.add_child(_order_info)
+	context.add_child(_order_info)
 
 	_troops_spin = SpinBox.new()
 	_troops_spin.min_value = 100
@@ -146,7 +165,7 @@ func _build_ui() -> void:
 	_troops_spin.value = 2000
 	_troops_spin.prefix = "Troops "
 	_troops_spin.visible = false
-	root.add_child(_troops_spin)
+	context.add_child(_troops_spin)
 
 	_food_spin = SpinBox.new()
 	_food_spin.min_value = 30
@@ -155,31 +174,23 @@ func _build_ui() -> void:
 	_food_spin.value = 300
 	_food_spin.prefix = "Food "
 	_food_spin.visible = false
-	root.add_child(_food_spin)
+	context.add_child(_food_spin)
 
 	_confirm_btn = Button.new()
 	_confirm_btn.text = "Xác Nhận"
 	_confirm_btn.visible = false
 	_confirm_btn.pressed.connect(_confirm_order)
-	root.add_child(_confirm_btn)
-
-	var hand_title := Label.new()
-	hand_title.text = "Bài Trên Tay"
-	root.add_child(hand_title)
-
-	_hand_box = VBoxContainer.new()
-	_hand_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_child(_hand_box)
+	context.add_child(_confirm_btn)
 
 	_end_turn_btn = Button.new()
 	_end_turn_btn.text = "Kết Thúc Lượt"
 	_end_turn_btn.pressed.connect(_end_turn)
-	root.add_child(_end_turn_btn)
+	context.add_child(_end_turn_btn)
 
 	_report_panel = PanelContainer.new()
 	_report_panel.visible = false
 	_report_panel.custom_minimum_size = Vector2(0, 190)
-	root.add_child(_report_panel)
+	context.add_child(_report_panel)
 
 	var report_box := VBoxContainer.new()
 	_report_panel.add_child(report_box)
@@ -204,7 +215,22 @@ func _build_ui() -> void:
 
 	_result_label = Label.new()
 	_result_label.visible = false
-	root.add_child(_result_label)
+	context.add_child(_result_label)
+
+	var hand_panel := PanelContainer.new()
+	hand_panel.name = "HandBar"
+	hand_panel.custom_minimum_size = Vector2(0, 132)
+	root.add_child(hand_panel)
+
+	var hand_scroll := ScrollContainer.new()
+	hand_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	hand_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	hand_panel.add_child(hand_scroll)
+
+	_hand_box = HBoxContainer.new()
+	_hand_box.name = "HandCards"
+	_hand_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hand_scroll.add_child(_hand_box)
 
 
 func _refresh() -> void:
@@ -228,11 +254,26 @@ func _refresh() -> void:
 
 
 func _add_hand_entry(card: StringName) -> void:
+	var cost := state.card_cost(card)
+	var card_panel := VBoxContainer.new()
+	card_panel.name = "Card_%s" % String(card).replace(".", "_")
+	card_panel.custom_minimum_size = Vector2(150, 104)
+	card_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_hand_box.add_child(card_panel)
+
 	var b := Button.new()
-	b.text = "%s (%d)" % [_card_names.get(card, String(card)), state.card_cost(card)]
-	b.disabled = state.energy < state.card_cost(card) or state.result != &""
+	b.name = "Button"
+	b.text = "%s\n%d quân lệnh" % [_card_names.get(card, String(card)), cost]
+	b.disabled = state.energy < cost or state.result != &""
 	b.pressed.connect(_begin_card.bind(card))
-	_hand_box.add_child(b)
+	card_panel.add_child(b)
+
+	var desc := Label.new()
+	desc.name = "Description"
+	desc.text = _card_descriptions.get(card, "")
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.custom_minimum_size = Vector2(0, 34)
+	card_panel.add_child(desc)
 
 
 func _begin_card(card: StringName) -> void:
