@@ -499,13 +499,15 @@ func _update_march_preview() -> void:
 	var city: CwCity = state.cities[_params["from_city"]]
 	var path: Array[Vector2i] = state.map.find_path(state.spawn_tile(city), _params["to"])
 	if path.is_empty():
-		_order_info.text = "That destination is unreachable."
+		map_view.clear_preview_path()
+		_order_info.text = "Không thể hành quân tới vị trí đó."
 		_confirm_btn.visible = false
 		return
+	map_view.set_preview_path(path)
 	var troops := int(_troops_spin.value)
 	var turns := state.map.turns_for_path(path, state.tuning.move_points_per_turn)
 	var food := state.march_food_needed(troops, path)
-	_order_info.text = "March %d troops: %d turn(s) to arrive, %d food budget." % [troops, turns, food]
+	_order_info.text = "Hành Quân %d quân: tới nơi sau %d lượt, cần %d lương." % [troops, turns, food]
 	_confirm_btn.visible = true
 
 
@@ -534,6 +536,7 @@ func _cancel_order() -> void:
 	_stage = &""
 	_params = {}
 	_order_info.text = ""
+	map_view.clear_preview_path()
 	_troops_spin.visible = false
 	_food_spin.visible = false
 	_confirm_btn.visible = false

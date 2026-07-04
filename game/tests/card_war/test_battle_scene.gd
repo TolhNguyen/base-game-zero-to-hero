@@ -146,6 +146,22 @@ func test_hand_entries_render_as_cards_with_description_and_cost() -> void:
 	remove_child(battle)
 
 
+func test_march_preview_sets_map_route_preview() -> void:
+	var scene: PackedScene = load("res://modules/card_war/ui/battle.tscn")
+	var battle: Node2D = auto_free(scene.instantiate())
+	add_child(battle)
+	var s: CwState = battle.state
+	s.hand.clear()
+	s.hand.append(&"card.march")
+	battle._refresh()
+	battle._begin_card(&"card.march")
+	battle._troops_spin.value = 2000
+	battle._on_tile_clicked(Vector2i(8, 3))
+	assert_bool(battle.map_view.preview_path.size() > 0).is_true()
+	assert_that(battle.map_view.preview_path[-1]).is_equal(Vector2i(8, 3))
+	remove_child(battle)
+
+
 func test_end_turn_publishes_victory_and_disables_button() -> void:
 	var bus: Node = get_node("/root/EventBus")
 	var published: Array[Dictionary] = []
