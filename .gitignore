@@ -13,6 +13,9 @@ game/reports/
 art_incoming/*
 !art_incoming/README.md
 
+# Codex/Superpowers local brainstorming companion artifacts
+.superpowers/
+
 # OS noise
 Thumbs.db
 Desktop.ini
