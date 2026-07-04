@@ -116,6 +116,19 @@ func test_presentation_layout_has_named_regions() -> void:
 	remove_child(battle)
 
 
+func test_presentation_layout_passes_mouse_input_over_map_space() -> void:
+	var scene: PackedScene = load("res://modules/card_war/ui/battle.tscn")
+	var battle: Node2D = auto_free(scene.instantiate())
+	add_child(battle)
+	var root: Control = battle.get_node("UI/Root") as Control
+	var main_row: Control = battle.get_node("UI/Root/MainRow") as Control
+	var map_spacer: Control = battle.get_node("UI/Root/MainRow/MapSpace") as Control
+	assert_int(root.mouse_filter).is_equal(Control.MOUSE_FILTER_PASS)
+	assert_int(main_row.mouse_filter).is_equal(Control.MOUSE_FILTER_PASS)
+	assert_int(map_spacer.mouse_filter).is_equal(Control.MOUSE_FILTER_IGNORE)
+	remove_child(battle)
+
+
 func test_hand_entries_render_as_cards_with_description_and_cost() -> void:
 	var scene: PackedScene = load("res://modules/card_war/ui/battle.tscn")
 	var battle: Node2D = auto_free(scene.instantiate())
@@ -128,6 +141,7 @@ func test_hand_entries_render_as_cards_with_description_and_cost() -> void:
 	assert_object(first).is_not_null()
 	assert_bool(first.name.begins_with("Card_")).is_true()
 	assert_bool(first.get_node("Button").text.contains("Hành Quân")).is_true()
+	assert_bool(first.get_node("Button").text.contains("2 quân lệnh")).is_true()
 	assert_bool(first.get_node("Description").text.contains("Điều một đạo quân")).is_true()
 	remove_child(battle)
 

@@ -120,6 +120,7 @@ func _build_ui() -> void:
 	var root := VBoxContainer.new()
 	root.name = "Root"
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_PASS
 	layer.add_child(root)
 
 	_hud_label = Label.new()
@@ -129,6 +130,7 @@ func _build_ui() -> void:
 	var main_row := HBoxContainer.new()
 	main_row.name = "MainRow"
 	main_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	main_row.mouse_filter = Control.MOUSE_FILTER_PASS
 	root.add_child(main_row)
 
 	var map_spacer := Control.new()
@@ -136,6 +138,7 @@ func _build_ui() -> void:
 	map_spacer.custom_minimum_size = Vector2(660, 650)
 	map_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	map_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	map_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	main_row.add_child(map_spacer)
 
 	var panel := PanelContainer.new()
