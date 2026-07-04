@@ -129,6 +129,18 @@ func test_presentation_layout_passes_mouse_input_over_map_space() -> void:
 	remove_child(battle)
 
 
+func test_presentation_layout_keeps_720p_vertical_budget() -> void:
+	var scene: PackedScene = load("res://modules/card_war/ui/battle.tscn")
+	var battle: Node2D = auto_free(scene.instantiate())
+	add_child(battle)
+	var map_spacer: Control = battle.get_node("UI/Root/MainRow/MapSpace") as Control
+	var hand_bar: Control = battle.get_node("UI/Root/HandBar") as Control
+	assert_float(map_spacer.custom_minimum_size.y).is_less_equal(590.0)
+	assert_float(hand_bar.custom_minimum_size.y).is_less_equal(124.0)
+	assert_int(battle.map_view.TILE).is_less_equal(36)
+	remove_child(battle)
+
+
 func test_hand_entries_render_as_cards_with_description_and_cost() -> void:
 	var scene: PackedScene = load("res://modules/card_war/ui/battle.tscn")
 	var battle: Node2D = auto_free(scene.instantiate())
@@ -142,7 +154,9 @@ func test_hand_entries_render_as_cards_with_description_and_cost() -> void:
 	assert_bool(first.name.begins_with("Card_")).is_true()
 	assert_bool(first.get_node("Button").text.contains("Hành Quân")).is_true()
 	assert_bool(first.get_node("Button").text.contains("2 quân lệnh")).is_true()
-	assert_bool(first.get_node("Description").text.contains("Điều một đạo quân")).is_true()
+	var desc: Label = first.get_node("Description") as Label
+	assert_bool(desc.text.contains("Điều một đạo quân")).is_true()
+	assert_int(desc.max_lines_visible).is_equal(1)
 	remove_child(battle)
 
 

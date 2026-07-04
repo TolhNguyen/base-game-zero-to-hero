@@ -135,7 +135,7 @@ func _build_ui() -> void:
 
 	var map_spacer := Control.new()
 	map_spacer.name = "MapSpace"
-	map_spacer.custom_minimum_size = Vector2(660, 650)
+	map_spacer.custom_minimum_size = Vector2(590, 590)
 	map_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	map_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	map_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -153,7 +153,7 @@ func _build_ui() -> void:
 
 	_status_label = Label.new()
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_status_label.custom_minimum_size = Vector2(0, 90)
+	_status_label.custom_minimum_size = Vector2(0, 74)
 	context.add_child(_status_label)
 
 	_order_info = Label.new()
@@ -222,7 +222,7 @@ func _build_ui() -> void:
 
 	var hand_panel := PanelContainer.new()
 	hand_panel.name = "HandBar"
-	hand_panel.custom_minimum_size = Vector2(0, 132)
+	hand_panel.custom_minimum_size = Vector2(0, 120)
 	root.add_child(hand_panel)
 
 	var hand_scroll := ScrollContainer.new()
@@ -260,7 +260,7 @@ func _add_hand_entry(card: StringName) -> void:
 	var cost := state.card_cost(card)
 	var card_panel := VBoxContainer.new()
 	card_panel.name = "Card_%s" % String(card).replace(".", "_")
-	card_panel.custom_minimum_size = Vector2(150, 104)
+	card_panel.custom_minimum_size = Vector2(150, 96)
 	card_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_hand_box.add_child(card_panel)
 
@@ -268,6 +268,7 @@ func _add_hand_entry(card: StringName) -> void:
 	b.name = "Button"
 	b.text = "%s\n%d quân lệnh" % [_card_names.get(card, String(card)), cost]
 	b.disabled = state.energy < cost or state.result != &""
+	b.custom_minimum_size = Vector2(0, 48)
 	b.pressed.connect(_begin_card.bind(card))
 	card_panel.add_child(b)
 
@@ -275,7 +276,10 @@ func _add_hand_entry(card: StringName) -> void:
 	desc.name = "Description"
 	desc.text = _card_descriptions.get(card, "")
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.custom_minimum_size = Vector2(0, 34)
+	desc.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	desc.max_lines_visible = 1
+	desc.clip_text = true
+	desc.custom_minimum_size = Vector2(0, 24)
 	card_panel.add_child(desc)
 
 

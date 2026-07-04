@@ -3,7 +3,7 @@ extends Node2D
 
 signal tile_clicked(tile: Vector2i)
 
-const TILE := 40
+const TILE := 34
 
 var state: CwState
 var highlight := Vector2i(-1, -1)
@@ -61,17 +61,20 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _draw_board_backdrop() -> void:
 	var board := Rect2(Vector2.ZERO, Vector2(state.map.size.x * TILE, state.map.size.y * TILE))
-	draw_rect(board.grow(18.0), Color(0.10, 0.08, 0.07), true)
-	draw_rect(board.grow(10.0), Color(0.28, 0.20, 0.12), false, 4.0)
+	draw_rect(board.grow(12.0), Color(0.09, 0.075, 0.06), true)
+	draw_rect(board, Color(0.22, 0.18, 0.12), true)
+	draw_rect(board.grow(7.0), Color(0.31, 0.22, 0.13), false, 3.0)
+	draw_rect(board.grow(2.0), Color(0.18, 0.13, 0.09), false, 1.0)
 
 
 func _draw_terrain() -> void:
 	for y: int in range(state.map.size.y):
 		for x: int in range(state.map.size.x):
 			var p := Vector2i(x, y)
-			var rect := _tile_rect(p).grow(-1.0)
-			draw_rect(rect, _terrain_color(state.map.letter_at(p)), true)
-			draw_rect(rect, Color(0.08, 0.06, 0.04, 0.22), false, 1.0)
+			var letter := state.map.letter_at(p)
+			var rect := _tile_rect(p).grow(-1.4)
+			_draw_soft_tile(rect, _terrain_color(letter))
+			_draw_terrain_detail(p, letter)
 
 
 func _draw_preview_path() -> void:
@@ -86,7 +89,8 @@ func _draw_preview_path() -> void:
 
 func _draw_highlight() -> void:
 	if state.map.in_bounds(highlight):
-		draw_rect(_tile_rect(highlight).grow(-3.0), Color(1.0, 0.84, 0.42), false, 3.0)
+		var points := _soft_tile_points(_tile_rect(highlight).grow(-4.0))
+		draw_polyline(_closed_points(points), Color(1.0, 0.82, 0.34), 2.5)
 
 
 func _draw_cities() -> void:
@@ -96,12 +100,11 @@ func _draw_cities() -> void:
 		var fill := Color(0.14, 0.28, 0.50) if city.owner_side == &"player" else Color(0.55, 0.17, 0.15)
 		var outline := Color(0.95, 0.76, 0.36) if city.owner_side == &"player" else Color(1.0, 0.48, 0.36)
 		var bounds := _city_bounds(city)
-		draw_rect(bounds.grow(-3.0), fill, true)
-		draw_rect(bounds.grow(-3.0), outline, false, 3.0)
+		_draw_banner(bounds.grow(-5.0), fill, outline)
 		if font != null:
 			var label := "Nhà" if city.owner_side == &"player" else "Địch"
-			draw_string(font, bounds.position + Vector2(4, 22), label,
-					HORIZONTAL_ALIGNMENT_CENTER, bounds.size.x - 8, 13, Color(1.0, 0.90, 0.66))
+			draw_string(font, bounds.position + Vector2(3, bounds.size.y * 0.48 + 5), label,
+					HORIZONTAL_ALIGNMENT_CENTER, bounds.size.x - 6, 13, Color(1.0, 0.92, 0.70))
 
 
 func _draw_camps() -> void:
@@ -109,12 +112,21 @@ func _draw_camps() -> void:
 	for value: Variant in state.camps.values():
 		var camp: CwCamp = value as CwCamp
 		var center := _tile_center(camp.pos)
-		draw_circle(center, 18.0, Color(0.95, 0.46, 0.18, 0.25))
-		draw_rect(Rect2(center - Vector2(12, 10), Vector2(24, 20)), Color(0.34, 0.22, 0.10), true)
-		draw_rect(Rect2(center - Vector2(12, 10), Vector2(24, 20)), Color(0.95, 0.76, 0.36), false, 2.0)
-		draw_line(center + Vector2(-6, -10), center + Vector2(0, -18), Color(0.95, 0.76, 0.36), 2.0)
+		draw_circle(center, 15.0, Color(0.95, 0.46, 0.18, 0.22))
+		draw_polygon([
+			center + Vector2(-13, 8),
+			center + Vector2(0, -13),
+			center + Vector2(13, 8),
+		], [Color(0.36, 0.22, 0.11)])
+		draw_polyline(PackedVector2Array([
+			center + Vector2(-13, 8),
+			center + Vector2(0, -13),
+			center + Vector2(13, 8),
+			center + Vector2(-13, 8),
+		]), Color(0.95, 0.76, 0.36), 2.0)
+		draw_line(center + Vector2(-4, -12), center + Vector2(-4, -22), Color(0.95, 0.76, 0.36), 1.8)
 		if font != null:
-			draw_string(font, center + Vector2(-16, 17), "Trại",
+			draw_string(font, center + Vector2(-16, 12), "Trại",
 					HORIZONTAL_ALIGNMENT_CENTER, 32, 11, Color(1.0, 0.90, 0.66))
 
 
@@ -138,19 +150,81 @@ func _draw_armies() -> void:
 		var army: CwArmy = value as CwArmy
 		var center := _tile_center(army.pos)
 		var fill := Color(0.18, 0.32, 0.62) if army.state != &"returning" else Color(0.42, 0.44, 0.70)
-		draw_circle(center, 15.0, fill)
-		draw_circle(center, 15.0, Color(1.0, 0.86, 0.42), false, 2.0)
-		draw_line(center + Vector2(-8, -12), center + Vector2(-8, -22), Color(0.95, 0.76, 0.36), 2.0)
+		draw_circle(center, 13.5, Color(0.07, 0.05, 0.035, 0.40))
+		draw_circle(center + Vector2(0, -1), 12.5, fill)
+		draw_circle(center + Vector2(0, -1), 12.5, Color(1.0, 0.86, 0.42), false, 2.0)
+		draw_line(center + Vector2(-7, -11), center + Vector2(-7, -20), Color(0.95, 0.76, 0.36), 1.8)
 		draw_polygon([
-			center + Vector2(-8, -22),
-			center + Vector2(8, -18),
-			center + Vector2(-8, -14),
+			center + Vector2(-7, -20),
+			center + Vector2(7, -17),
+			center + Vector2(-7, -14),
 		], [Color(0.95, 0.76, 0.36)])
 		if font != null:
-			draw_string(font, center + Vector2(-16, 4), _general_label(army.general_id),
+			draw_string(font, center + Vector2(-16, 1), _general_label(army.general_id),
 					HORIZONTAL_ALIGNMENT_CENTER, 32, 12, Color.WHITE)
-			draw_string(font, _tile_rect(army.pos).position + Vector2(3, 34),
-					str(army.troops), HORIZONTAL_ALIGNMENT_CENTER, TILE - 6, 10, Color(1.0, 0.90, 0.66))
+			draw_string(font, _tile_rect(army.pos).position + Vector2(2, 28),
+					str(army.troops), HORIZONTAL_ALIGNMENT_CENTER, TILE - 4, 9, Color(1.0, 0.90, 0.66))
+
+
+func _draw_soft_tile(rect: Rect2, fill: Color) -> void:
+	var points := _soft_tile_points(rect)
+	draw_colored_polygon(points, fill)
+	draw_polyline(_closed_points(points), Color(0.95, 0.85, 0.62, 0.10), 1.0)
+
+
+func _draw_terrain_detail(tile: Vector2i, letter: String) -> void:
+	var center := _tile_center(tile)
+	match letter:
+		"F":
+			draw_circle(center + Vector2(-5, 1), 3.0, Color(0.08, 0.22, 0.11, 0.65))
+			draw_circle(center + Vector2(3, -3), 3.5, Color(0.10, 0.26, 0.13, 0.60))
+		"R":
+			draw_line(center + Vector2(-12, 0), center + Vector2(12, -1),
+					Color(0.55, 0.78, 0.82, 0.42), 2.0)
+			draw_line(center + Vector2(-8, 5), center + Vector2(8, 4),
+					Color(0.18, 0.28, 0.34, 0.38), 1.5)
+		"M":
+			draw_polygon([
+				center + Vector2(-8, 7),
+				center + Vector2(0, -7),
+				center + Vector2(8, 7),
+			], [Color(0.52, 0.50, 0.45, 0.38)])
+		"H":
+			draw_circle(center, 5.0, Color(0.43, 0.50, 0.64, 0.30))
+
+
+func _draw_banner(bounds: Rect2, fill: Color, outline: Color) -> void:
+	var points := PackedVector2Array([
+		bounds.position + Vector2(4, 0),
+		bounds.position + Vector2(bounds.size.x - 4, 0),
+		bounds.position + Vector2(bounds.size.x, bounds.size.y * 0.5),
+		bounds.position + Vector2(bounds.size.x - 4, bounds.size.y),
+		bounds.position + Vector2(4, bounds.size.y),
+		bounds.position + Vector2(0, bounds.size.y * 0.5),
+	])
+	draw_colored_polygon(points, fill)
+	draw_polyline(_closed_points(points), outline, 2.4)
+
+
+func _soft_tile_points(rect: Rect2) -> PackedVector2Array:
+	var cut := rect.size.x * 0.18
+	return PackedVector2Array([
+		rect.position + Vector2(cut, 0),
+		rect.position + Vector2(rect.size.x - cut, 0),
+		rect.position + Vector2(rect.size.x, cut),
+		rect.position + Vector2(rect.size.x, rect.size.y - cut),
+		rect.position + Vector2(rect.size.x - cut, rect.size.y),
+		rect.position + Vector2(cut, rect.size.y),
+		rect.position + Vector2(0, rect.size.y - cut),
+		rect.position + Vector2(0, cut),
+	])
+
+
+func _closed_points(points: PackedVector2Array) -> PackedVector2Array:
+	var closed := points.duplicate()
+	if not closed.is_empty():
+		closed.append(closed[0])
+	return closed
 
 
 func _city_bounds(city: CwCity) -> Rect2:
@@ -184,15 +258,15 @@ func _tile_center(p: Vector2i) -> Vector2:
 func _terrain_color(letter: String) -> Color:
 	match letter:
 		"P":
-			return Color(0.46, 0.42, 0.28)
+			return Color(0.50, 0.45, 0.30)
 		"F":
-			return Color(0.16, 0.34, 0.20)
+			return Color(0.17, 0.35, 0.20)
 		"R":
-			return Color(0.18, 0.34, 0.42)
+			return Color(0.19, 0.36, 0.43)
 		"M":
-			return Color(0.30, 0.29, 0.28)
+			return Color(0.35, 0.33, 0.30)
 		"H":
-			return Color(0.20, 0.31, 0.48)
+			return Color(0.23, 0.33, 0.50)
 		"E":
 			return Color(0.45, 0.20, 0.18)
 		_:
