@@ -78,6 +78,33 @@ func test_order_controls_have_task_211_safe_defaults() -> void:
 	remove_child(battle)
 
 
+func test_card_content_uses_vietnamese_display_names() -> void:
+	var expected := {
+		&"card.march": "Hành Quân",
+		&"card.gather_food": "Thu Lương",
+		&"card.build_camp": "Dựng Trại",
+		&"card.transport": "Vận Lương",
+		&"card.assault": "Công Thành",
+		&"card.feast": "Mừng Công",
+	}
+	for card_id: StringName in expected:
+		var path := "res://content/cards/%s.tres" % String(card_id)
+		var card: CwCardDef = load(path)
+		assert_str(card.display_name).is_equal(expected[card_id])
+
+
+func test_battle_scene_uses_vietnamese_hud_and_report_text() -> void:
+	var scene: PackedScene = load("res://modules/card_war/ui/battle.tscn")
+	var battle: Node2D = auto_free(scene.instantiate())
+	add_child(battle)
+	assert_bool(battle._hud_label.text.contains("Lượt")).is_true()
+	assert_bool(battle._hud_label.text.contains("Quân lệnh")).is_true()
+	assert_bool(battle._hud_label.text.contains("Lương")).is_true()
+	assert_bool(battle._hud_label.text.contains("Sĩ khí")).is_true()
+	assert_str(battle._event_text({"t": &"turn_ended", "turn": 2})).is_equal("Lượt 2 bắt đầu.")
+	remove_child(battle)
+
+
 func test_end_turn_publishes_victory_and_disables_button() -> void:
 	var bus: Node = get_node("/root/EventBus")
 	var published: Array[Dictionary] = []

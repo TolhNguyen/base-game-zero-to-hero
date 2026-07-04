@@ -17,6 +17,22 @@ var _report_panel: PanelContainer
 var _report_text: RichTextLabel
 var _result_label: Label
 var _card_names: Dictionary = {}
+var _card_descriptions: Dictionary = {
+	&"card.march": "Điều một đạo quân tới vị trí chọn.",
+	&"card.gather_food": "Tăng lương dự trữ tại thành.",
+	&"card.build_camp": "Dựng doanh trại tại vị trí đạo quân.",
+	&"card.transport": "Chuyển lương tới trại hoặc đạo quân.",
+	&"card.assault": "Công thành bằng đạo quân đang áp sát.",
+	&"card.feast": "Tăng sĩ khí sau chiến thắng.",
+}
+var _order_type_names: Dictionary = {
+	&"march": "Hành Quân",
+	&"gather_food": "Thu Lương",
+	&"build_camp": "Dựng Trại",
+	&"transport": "Vận Lương",
+	&"assault": "Công Thành",
+	&"feast": "Mừng Công",
+}
 var _card: StringName = &""
 var _stage: StringName = &""
 var _params: Dictionary = {}
@@ -119,7 +135,7 @@ func _build_ui() -> void:
 	root.add_child(_status_label)
 
 	_order_info = Label.new()
-	_order_info.text = "Select a tile."
+	_order_info.text = "Chọn một lá bài hoặc một đơn vị."
 	_order_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(_order_info)
 
@@ -142,13 +158,13 @@ func _build_ui() -> void:
 	root.add_child(_food_spin)
 
 	_confirm_btn = Button.new()
-	_confirm_btn.text = "Confirm"
+	_confirm_btn.text = "Xác Nhận"
 	_confirm_btn.visible = false
 	_confirm_btn.pressed.connect(_confirm_order)
 	root.add_child(_confirm_btn)
 
 	var hand_title := Label.new()
-	hand_title.text = "Hand"
+	hand_title.text = "Bài Trên Tay"
 	root.add_child(hand_title)
 
 	_hand_box = VBoxContainer.new()
@@ -156,7 +172,7 @@ func _build_ui() -> void:
 	root.add_child(_hand_box)
 
 	_end_turn_btn = Button.new()
-	_end_turn_btn.text = "End Turn"
+	_end_turn_btn.text = "Kết Thúc Lượt"
 	_end_turn_btn.pressed.connect(_end_turn)
 	root.add_child(_end_turn_btn)
 
@@ -172,12 +188,12 @@ func _build_ui() -> void:
 	report_box.add_child(report_header)
 
 	var report_title := Label.new()
-	report_title.text = "Report"
+	report_title.text = "Quân Tình"
 	report_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	report_header.add_child(report_title)
 
 	var close_btn := Button.new()
-	close_btn.text = "Close"
+	close_btn.text = "Đóng"
 	close_btn.pressed.connect(func() -> void: _report_panel.visible = false)
 	report_header.add_child(close_btn)
 
@@ -195,7 +211,7 @@ func _refresh() -> void:
 	if state == null:
 		return
 
-	_hud_label.text = "Turn %d | Energy %d | Food %d | Morale %.0f" % [
+	_hud_label.text = "Lượt %d | Quân lệnh %d | Lương %d | Sĩ khí %.0f" % [
 		state.turn,
 		state.energy,
 		state.total_player_food(),
@@ -388,32 +404,33 @@ func _event_text(e: Dictionary) -> String:
 	var t := StringName(e.get("t", &""))
 	match t:
 		&"order_started":
-			return "Order started: %s" % e.get("type", &"")
+			var order_type := StringName(e.get("type", &""))
+			return "Lệnh bắt đầu: %s." % _order_type_names.get(order_type, String(order_type))
 		&"army_moved":
-			return "Army %d moved to %s" % [int(e.get("id", 0)), e.get("pos", Vector2i.ZERO)]
+			return "Đạo quân %d tiến tới %s." % [int(e.get("id", 0)), e.get("pos", Vector2i.ZERO)]
 		&"army_arrived":
-			return "Army %d arrived at %s" % [int(e.get("id", 0)), e.get("pos", Vector2i.ZERO)]
+			return "Đạo quân %d đã tới %s." % [int(e.get("id", 0)), e.get("pos", Vector2i.ZERO)]
 		&"army_returning":
-			return "Army %d is returning home" % int(e.get("id", 0))
+			return "Đạo quân %d đang rút về thành." % int(e.get("id", 0))
 		&"army_returned":
-			return "Army %d returned home" % int(e.get("id", 0))
+			return "Đạo quân %d đã trở về thành." % int(e.get("id", 0))
 		&"army_disbanded":
-			return "Army %d disbanded" % int(e.get("id", 0))
+			return "Đạo quân %d tan rã." % int(e.get("id", 0))
 		&"army_lost":
-			return "Army %d was lost" % int(e.get("id", 0))
+			return "Đạo quân %d bị tiêu diệt." % int(e.get("id", 0))
 		&"camp_built":
-			return "Camp %d built at %s" % [int(e.get("id", 0)), e.get("pos", Vector2i.ZERO)]
+			return "Doanh trại %d được dựng tại %s." % [int(e.get("id", 0)), e.get("pos", Vector2i.ZERO)]
 		&"camp_lost":
-			return "Camp %d was lost" % int(e.get("id", 0))
+			return "Doanh trại %d bị phá." % int(e.get("id", 0))
 		&"convoy_arrived":
-			return "Convoy %d arrived" % int(e.get("id", 0))
+			return "Đoàn vận lương %d đã tới nơi." % int(e.get("id", 0))
 		&"food_gathered":
-			return "%s gathered %d food" % [e.get("city", &""), int(e.get("amount", 0))]
+			return "%s thu được %d lương." % [e.get("city", &""), int(e.get("amount", 0))]
 		&"feast_held":
-			return "Feast held for %s %s" % [e.get("kind", &""), e.get("id", "")]
+			return "Mở tiệc mừng công cho %s %s." % [e.get("kind", &""), e.get("id", "")]
 		&"assault":
-			var captured: String = " captured" if bool(e.get("captured", false)) else ""
-			return "Army %d assaulted %s: attacker -%d, defender -%d%s" % [
+			var captured: String = " Thành thất thủ." if bool(e.get("captured", false)) else ""
+			return "Đạo quân %d công %s: ta mất %d, địch mất %d.%s" % [
 				int(e.get("army", 0)),
 				e.get("city", &""),
 				int(e.get("att_losses", 0)),
@@ -421,15 +438,15 @@ func _event_text(e: Dictionary) -> String:
 				captured,
 			]
 		&"starving":
-			return "%s %s is starving" % [e.get("kind", &""), e.get("id", "")]
+			return "%s %s đang thiếu lương." % [e.get("kind", &""), e.get("id", "")]
 		&"city_surrendered":
-			return "%s surrendered to %s" % [e.get("id", &""), e.get("to", &"")]
+			return "%s đầu hàng %s." % [e.get("id", &""), e.get("to", &"")]
 		&"victory":
-			return "Victory"
+			return "Chiến thắng."
 		&"defeat":
-			return "Defeat"
+			return "Thất bại."
 		&"turn_ended":
-			return "Turn %d begins" % int(e.get("turn", 0))
+			return "Lượt %d bắt đầu." % int(e.get("turn", 0))
 		_:
 			return String(t)
 
