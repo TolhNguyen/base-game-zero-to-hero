@@ -246,5 +246,6 @@ func test_rejected_order_reports_reason_and_keeps_state() -> void:
 	battle._confirm_order()
 	assert_int(s.pending.size()).is_equal(0)
 	assert_int(s.energy).is_equal(3)
-	assert_bool(battle._status_label.text.contains("rejected")).is_true()
+	assert_bool(battle._status_label.text.contains("Không thể thực hiện lệnh")).is_true()
+	assert_bool(battle._status_label.text.contains("quân")).is_true()
 	remove_child(battle)

@@ -435,7 +435,7 @@ func _end_turn() -> void:
 
 	if state.result != &"":
 		_result_label.visible = true
-		_result_label.text = "Victory" if state.result == &"victory" else "Defeat"
+		_result_label.text = "CHIẾN THẮNG" if state.result == &"victory" else "THẤT BẠI"
 		_end_turn_btn.disabled = true
 
 		var bus: Node = get_node_or_null("/root/EventBus")
@@ -511,6 +511,22 @@ func _update_march_preview() -> void:
 	_confirm_btn.visible = true
 
 
+func _order_rejection_text(order: CwOrder) -> String:
+	match order.type:
+		&"march":
+			return "Không thể thực hiện lệnh Hành Quân: kiểm tra quân số, lương, tướng rảnh và đường đi."
+		&"transport":
+			return "Không thể Vận Lương: kiểm tra lượng lương và mục tiêu nhận lương."
+		&"assault":
+			return "Không thể Công Thành: đạo quân phải giữ vị trí cạnh thành địch."
+		&"build_camp":
+			return "Không thể Dựng Trại: chọn đạo quân đang giữ vị trí."
+		&"feast":
+			return "Không thể Mừng Công: mục tiêu cần vừa có chiến công và đủ lương."
+		_:
+			return "Không thể thực hiện lệnh: điều kiện chưa hợp lệ."
+
+
 func _confirm_order() -> void:
 	if _card == &"":
 		return
@@ -524,9 +540,9 @@ func _confirm_order() -> void:
 	o.params = _params.duplicate()
 	var err: Error = state.play_card(o)
 	if err != OK:
-		_status_label.text = "Order rejected (err %d): check troops, food, energy and target." % err
+		_status_label.text = _order_rejection_text(o)
 		return
-	_status_label.text = "Order queued for this turn."
+	_status_label.text = "Đã ghi lệnh cho lượt này."
 	_cancel_order()
 	_refresh()
 
