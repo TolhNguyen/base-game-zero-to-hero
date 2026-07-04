@@ -5,6 +5,7 @@ const GridScript := preload("res://modules/card_war/sim/cw_map_grid.gd")
 const TuningScript := preload("res://modules/card_war/sim/cw_tuning.gd")
 const OrderScript := preload("res://modules/card_war/sim/cw_order.gd")
 const ResolverScript := preload("res://modules/card_war/sim/cw_resolver.gd")
+const CampScript := preload("res://modules/card_war/sim/cw_camp.gd")
 
 const COSTS := {"P": 2, "F": 3, "R": 0, "M": 0, "H": 2, "E": 2}
 const EXPENSIVE_COSTS := {"H": 2, "X": 7, "E": 2}
@@ -136,6 +137,39 @@ func test_march_rejects_path_step_over_move_points_atomically() -> void:
 	_assert_invalid_atomic(s, _order(&"card.march", &"march",
 			{"general_id": &"general.asun", "troops": 100,
 			"from_city": &"city.home", "to": Vector2i(2, 0)}))
+
+
+func test_march_can_start_from_camp() -> void:
+	var s: CwState = _state()
+	var camp: CwCamp = CampScript.new()
+	camp.id = s.next_id()
+	camp.pos = Vector2i(1, 0)
+	camp.troops = 1000
+	camp.food = 300
+	camp.morale = 76.0
+	camp.general_id = &"general.asun"
+	s.camps[camp.id] = camp
+	s.set_general_busy(&"general.asun", true)
+
+	var err: Error = s.play_card(_order(&"card.march", &"march",
+			{"camp_id": camp.id, "to": Vector2i(4, 0)}))
+	assert_int(err).is_equal(OK)
+	if err != OK:
+		return
+	var ev: Array[Dictionary] = ResolverScript.resolve(s)
+
+	assert_bool(s.camps.has(camp.id)).is_false()
+	assert_int(s.armies.size()).is_equal(1)
+	var army: CwArmy = s.armies.values()[0]
+	assert_that(army.pos).is_equal(Vector2i(4, 0))
+	assert_str(String(army.state)).is_equal("holding")
+	assert_int(army.troops).is_equal(1000)
+	assert_int(army.food).is_less(300)
+	assert_that(army.general_id).is_equal(&"general.asun")
+	var types: Array = []
+	for e: Dictionary in ev:
+		types.append(e["t"])
+	assert_that(types).contains([&"order_started", &"army_moved", &"army_arrived"])
 
 
 func test_returning_army_is_lost_if_home_missing_at_merge() -> void:

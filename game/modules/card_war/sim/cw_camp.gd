@@ -8,6 +8,7 @@ var troops := 0
 var food := 0
 var morale := 80.0
 var general_id: StringName = &""
+var home_city: StringName = &""
 var footprint_tiles := 1
 var starving := false
 

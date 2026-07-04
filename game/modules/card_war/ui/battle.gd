@@ -288,16 +288,10 @@ func _begin_card(card: StringName) -> void:
 	_card = card
 	match state.card_type(card):
 		&"march":
-			var free: Array[StringName] = state.free_generals()
-			if free.is_empty():
-				_status_label.text = "No free general to lead the march."
-				_card = &""
-				return
-			_params["general_id"] = free[0]
-			_params["from_city"] = _first_player_city()
-			_stage = &"pick_dest"
+			_stage = &"pick_march_source"
 			_troops_spin.visible = true
-			_status_label.text = "March: set troops, then click a destination tile."
+			_status_label.text = "Hành Quân: chọn thành hoặc trại xuất phát, rồi chọn điểm đến."
+			_order_info.text = "Bấm thẳng điểm đến để xuất quân từ thành."
 		&"gather_food":
 			_params["city"] = _first_player_city()
 			_order_info.text = "Gather food at %s." % _params["city"]
@@ -326,6 +320,13 @@ func _on_tile_clicked(tile: Vector2i) -> void:
 		_show_tile_info(tile)
 		return
 	match _stage:
+		&"pick_march_source":
+			if _set_march_source_from_tile(tile):
+				return
+			if not _set_default_city_march_source():
+				return
+			_params["to"] = tile
+			_update_march_preview()
 		&"pick_dest":
 			_params["to"] = tile
 			_update_march_preview()
@@ -499,9 +500,48 @@ func _event_text(e: Dictionary) -> String:
 			return String(t)
 
 
+func _set_march_source_from_tile(tile: Vector2i) -> bool:
+	var camp: CwCamp = state.camp_at(tile)
+	if camp != null:
+		_params["camp_id"] = camp.id
+		_troops_spin.value = camp.troops
+		_stage = &"pick_dest"
+		_order_info.text = "Hành Quân từ trại %d: chọn điểm đến." % camp.id
+		_status_label.text = "Đã chọn trại xuất phát."
+		return true
+
+	var city: CwCity = state.city_at(tile)
+	if city != null and city.owner_side == &"player":
+		if not _set_default_city_march_source():
+			return true
+		_stage = &"pick_dest"
+		_order_info.text = "Hành Quân từ %s: chọn điểm đến." % city.id
+		_status_label.text = "Đã chọn thành xuất phát."
+		return true
+	return false
+
+
+func _set_default_city_march_source() -> bool:
+	var free: Array[StringName] = state.free_generals()
+	if free.is_empty():
+		_status_label.text = "Không có tướng rảnh trong thành. Hãy chọn một trại có tướng hoặc kết thúc lượt."
+		return false
+	_params["general_id"] = free[0]
+	_params["from_city"] = _first_player_city()
+	return true
+
+
+func _march_start_tile() -> Vector2i:
+	if _params.has("camp_id"):
+		var camp: CwCamp = state.camps.get(int(_params["camp_id"]), null) as CwCamp
+		return camp.pos if camp != null else Vector2i(-1, -1)
+	var city: CwCity = state.cities.get(_params.get("from_city", &""), null) as CwCity
+	return state.spawn_tile(city) if city != null else Vector2i(-1, -1)
+
+
 func _update_march_preview() -> void:
-	var city: CwCity = state.cities[_params["from_city"]]
-	var path: Array[Vector2i] = state.map.find_path(state.spawn_tile(city), _params["to"])
+	var start := _march_start_tile()
+	var path: Array[Vector2i] = state.map.find_path(start, _params["to"])
 	if path.is_empty():
 		map_view.clear_preview_path()
 		_order_info.text = "Không thể hành quân tới vị trí đó."
@@ -518,7 +558,7 @@ func _update_march_preview() -> void:
 func _order_rejection_text(order: CwOrder) -> String:
 	match order.type:
 		&"march":
-			return "Không thể thực hiện lệnh Hành Quân: kiểm tra quân số, lương, tướng rảnh và đường đi."
+			return "Không thể thực hiện lệnh Hành Quân: kiểm tra quân số, lương, tướng/trại và đường đi."
 		&"transport":
 			return "Không thể Vận Lương: kiểm tra lượng lương và mục tiêu nhận lương."
 		&"assault":
@@ -537,7 +577,7 @@ func _confirm_order() -> void:
 	var o := CwOrder.new()
 	o.card_id = _card
 	o.type = state.card_type(_card)
-	if o.type == &"march":
+	if o.type == &"march" and _params.has("from_city"):
 		_params["troops"] = int(_troops_spin.value)
 	if o.type == &"transport":
 		_params["food"] = int(_food_spin.value)

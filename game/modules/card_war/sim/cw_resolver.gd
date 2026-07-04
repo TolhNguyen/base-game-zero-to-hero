@@ -65,6 +65,10 @@ static func _start_gather_food(s: CwState, order: CwOrder, events: Array[Diction
 
 
 static func _start_march(s: CwState, order: CwOrder, events: Array[Dictionary]) -> void:
+	if order.params.has("camp_id"):
+		_start_camp_march(s, order, events)
+		return
+
 	var from_city_id: StringName = StringName(order.params.get("from_city", &""))
 	var city: CwCity = s.cities.get(from_city_id, null) as CwCity
 	if city == null:
@@ -96,6 +100,40 @@ static func _start_march(s: CwState, order: CwOrder, events: Array[Dictionary]) 
 	a.home_city = from_city_id
 	s.armies[a.id] = a
 	s.set_general_busy(general_id, true)
+	events.append({"t": &"order_started", "type": &"march", "army": a.id})
+
+
+static func _start_camp_march(s: CwState, order: CwOrder, events: Array[Dictionary]) -> void:
+	var camp_id: int = int(order.params.get("camp_id", 0))
+	var camp: CwCamp = s.camps.get(camp_id, null) as CwCamp
+	if camp == null:
+		return
+
+	var to: Vector2i = order.params.get("to", Vector2i.ZERO) as Vector2i
+	var path: Array[Vector2i] = s.map.find_path(camp.pos, to)
+	if path.is_empty():
+		return
+
+	var food_needed: int = s.march_food_needed(camp.troops, path)
+	if camp.food < food_needed:
+		return
+
+	var a: CwArmy = CwArmy.new()
+	a.id = s.next_id()
+	a.general_id = camp.general_id
+	a.general_combat_factor = s.general_combat_factor(camp.general_id)
+	a.general_loss_reduction = s.general_loss_reduction(camp.general_id)
+	a.troops = camp.troops
+	a.morale = camp.morale
+	a.food = camp.food
+	a.pos = camp.pos
+	a.state = &"marching"
+	a.path = path.duplicate()
+	a.hold_left = s.tuning.march_hold_turns
+	a.home_city = camp.home_city
+	s.armies[a.id] = a
+	s.camps.erase(camp.id)
+	s.set_general_busy(a.general_id, true)
 	events.append({"t": &"order_started", "type": &"march", "army": a.id})
 
 
@@ -140,6 +178,7 @@ static func _start_build_camp(s: CwState, order: CwOrder, events: Array[Dictiona
 	camp.food = army.food
 	camp.morale = army.morale
 	camp.general_id = army.general_id
+	camp.home_city = army.home_city
 	camp.footprint_tiles = ceili(army.troops / float(s.tuning.troops_per_camp_tile))
 	s.camps[camp.id] = camp
 	s.armies.erase(army.id)

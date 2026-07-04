@@ -2,6 +2,7 @@ extends GdUnitTestSuite
 
 const BattleScript := preload("res://modules/card_war/ui/battle.gd")
 const OrderScript := preload("res://modules/card_war/sim/cw_order.gd")
+const CampScript := preload("res://modules/card_war/sim/cw_camp.gd")
 
 
 class FakeRegistry:
@@ -244,6 +245,41 @@ func test_march_order_flow_queues_order() -> void:
 	var o: CwOrder = s.pending[0]
 	assert_that(o.params["to"]).is_equal(Vector2i(8, 3))
 	assert_int(int(o.params["troops"])).is_equal(2000)
+	remove_child(battle)
+
+
+func test_march_order_flow_can_start_from_camp() -> void:
+	var scene: PackedScene = load("res://modules/card_war/ui/battle.tscn")
+	var battle: Node2D = auto_free(scene.instantiate())
+	add_child(battle)
+	var s: CwState = battle.state
+	var camp: CwCamp = CampScript.new()
+	camp.id = s.next_id()
+	camp.pos = Vector2i(6, 3)
+	camp.troops = 1000
+	camp.food = 500
+	camp.morale = 80.0
+	camp.general_id = &"general.asun"
+	camp.home_city = &"city.home"
+	s.camps[camp.id] = camp
+	s.set_general_busy(&"general.asun", true)
+	s.hand.clear()
+	s.hand.append(&"card.march")
+	battle._refresh()
+
+	battle._begin_card(&"card.march")
+	battle._on_tile_clicked(camp.pos)
+	battle._on_tile_clicked(Vector2i(8, 3))
+	battle._confirm_order()
+
+	assert_int(s.pending.size()).is_equal(1)
+	if s.pending.size() != 1:
+		remove_child(battle)
+		return
+	var o: CwOrder = s.pending[0]
+	assert_int(int(o.params["camp_id"])).is_equal(camp.id)
+	assert_that(o.params["to"]).is_equal(Vector2i(8, 3))
+	assert_bool(o.params.has("from_city")).is_false()
 	remove_child(battle)
 
 

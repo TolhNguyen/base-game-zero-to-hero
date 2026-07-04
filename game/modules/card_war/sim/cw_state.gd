@@ -302,6 +302,9 @@ func _validate_order(order: CwOrder) -> Error:
 
 
 func _validate_march(params: Dictionary) -> Error:
+	if params.has("camp_id"):
+		return _validate_camp_march(params)
+
 	var from_city_id: StringName = StringName(params.get("from_city", &""))
 	var city: CwCity = _player_city(from_city_id)
 	if city == null:
@@ -327,6 +330,25 @@ func _validate_march(params: Dictionary) -> Error:
 		return ERR_INVALID_PARAMETER
 	var available_food: int = city.food - int(reserves["food"])
 	if available_food < march_food_needed(troops, path):
+		return ERR_INVALID_PARAMETER
+	return OK
+
+
+func _validate_camp_march(params: Dictionary) -> Error:
+	var camp_id: int = int(params.get("camp_id", 0))
+	var camp: CwCamp = camps.get(camp_id, null) as CwCamp
+	if camp == null or _has_pending_camp_march(camp_id):
+		return ERR_INVALID_PARAMETER
+	if camp.troops < 1 or camp.general_id == &"" or not has_general(camp.general_id):
+		return ERR_INVALID_PARAMETER
+
+	var to: Vector2i = params.get("to", Vector2i.ZERO) as Vector2i
+	var path: Array[Vector2i] = map.find_path(camp.pos, to)
+	if path.is_empty():
+		return ERR_INVALID_PARAMETER
+	if not _path_fits_turn_points(path):
+		return ERR_INVALID_PARAMETER
+	if camp.food < march_food_needed(camp.troops, path):
 		return ERR_INVALID_PARAMETER
 	return OK
 
@@ -440,6 +462,13 @@ func _validate_feast(params: Dictionary) -> Error:
 func _has_pending_assault(army_id: int) -> bool:
 	for order: CwOrder in pending:
 		if order.type == &"assault" and int(order.params.get("army_id", 0)) == army_id:
+			return true
+	return false
+
+
+func _has_pending_camp_march(camp_id: int) -> bool:
+	for order: CwOrder in pending:
+		if order.type == &"march" and int(order.params.get("camp_id", 0)) == camp_id:
 			return true
 	return false
 
